@@ -1,0 +1,100 @@
+﻿@model giao_dien_demo.Models.Leave
+
+<style>
+    .leave-container {
+        max-width: 500px;
+        margin: 40px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        animation: fadeIn 0.5s ease;
+    }
+
+        .leave-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+        .form-control:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 5px rgba(102,126,234,0.5);
+        }
+
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #00c6ff, #0072ff);
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+        .btn-submit:hover {
+            transform: scale(1.05);
+        }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 15px;
+        text-decoration: none;
+        color: #0072ff;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="leave-container">
+
+    <a asp-action="Index" class="back-link">⬅ Quay lại</a>
+
+    <h2>📄 Tạo đơn nghỉ phép</h2>
+
+    <form method="post">
+
+        <div class="form-group">
+            <label>📅 Từ ngày</label>
+            <input type="date" name="FromDate" class="form-control" required />
+        </div>
+
+        <div class="form-group">
+            <label>📅 Đến ngày</label>
+            <input type="date" name="ToDate" class="form-control" required />
+        </div>
+
+        <div class="form-group">
+            <label>📝 Lý do</label>
+            <textarea name="Reason" class="form-control" rows="3" required></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">🚀 Gửi đơn</button>
+
+    </form>
+
+</div>

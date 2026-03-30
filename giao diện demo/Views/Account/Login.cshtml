@@ -1,0 +1,96 @@
+﻿@{
+    Layout = null;
+}
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+        height: 100vh;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .login-box {
+        width: 350px;
+        padding: 30px;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        text-align: center;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+        color: white;
+    }
+
+    .input-box {
+        margin-bottom: 20px;
+    }
+
+        .input-box input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+            .input-box input::placeholder {
+                color: #eee;
+            }
+
+    .btn-login {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(45deg, #4facfe, #00f2fe);
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+        .btn-login:hover {
+            transform: scale(1.05);
+        }
+
+    .error {
+        color: #ffdddd;
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="login-box">
+    <h2>🚀 HR Management</h2>
+
+    <!-- hiển thị lỗi -->
+    @if (ViewBag.Error != null)
+    {
+        <div class="error">@ViewBag.Error</div>
+    }
+
+    <!-- 🔥 FORM CHUẨN -->
+    <form method="post" action="/Account/Login">
+        <div class="input-box">
+            <input type="text" name="username" placeholder="Tài khoản" required />
+        </div>
+
+        <div class="input-box">
+            <input type="password" name="password" placeholder="Mật khẩu" required />
+        </div>
+
+        <button type="submit" class="btn-login">Đăng nhập</button>
+    </form>
+</div>

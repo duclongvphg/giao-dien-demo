@@ -1,0 +1,104 @@
+﻿@model List<giao_dien_demo.Models.Employee>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<a asp-controller="Dashboard" asp-action="Index" class="btn-back">
+    ⬅ Quay về trang chủ
+</a>
+
+<h2>Quản lý nhân viên</h2>
+
+<br />
+
+<a asp-controller="Employee" asp-action="Create">➕ Thêm nhân viên</a>
+
+<br />
+<br />
+
+<table border="1" cellpadding="10" style="width:100%">
+    <tr style="background:#4A90E2; color:white;">
+        <th>ID</th>
+        <th>Tên</th>
+        <th>Phòng ban</th>
+        <th>Chức vụ</th>
+        <th>Lương</th>
+        <th>Hành động</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr id="row-@item.Id">
+            <td>@item.Id</td>
+            <td>@item.Name</td>
+            <td>@item.Department</td>
+            <td>@item.Position</td>
+            <td>@item.Salary</td>
+            <td>
+                <a asp-controller="Employee" asp-action="Edit" asp-route-id="@item.Id">✏️ Sửa</a> |
+
+                <a href="javascript:void(0)" onclick="deleteEmployee(@item.Id)">
+                    ❌ Xóa
+                </a>
+            </td>
+        </tr>
+    }
+</table>
+
+<script>
+    function deleteEmployee(id) {
+
+        Swal.fire({
+            title: 'Bạn chắc chắn?',
+            text: "Dữ liệu sẽ bị xóa!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+
+            if (!result.isConfirmed) return;
+
+            let row = document.getElementById("row-" + id);
+
+            // animation
+            row.style.transition = "all 0.5s ease";
+            row.style.opacity = "0";
+            row.style.transform = "translateX(-100px)";
+            row.style.backgroundColor = "#ffcccc";
+
+            // 🔥 FIX QUAN TRỌNG NHẤT: thêm header chống lỗi ASP.NET
+            fetch('/Employee/Delete?id=' + id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+
+                    setTimeout(() => {
+                        row.remove();
+
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Đã xóa!',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+
+                    }, 500);
+
+                } else {
+                    Swal.fire('Lỗi!', 'Xóa thất bại!', 'error');
+                }
+            })
+            .catch(() => {
+                Swal.fire('Lỗi!', 'Có lỗi xảy ra!', 'error');
+            });
+
+        });
+    }
+</script>

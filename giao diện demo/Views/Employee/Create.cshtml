@@ -1,0 +1,126 @@
+﻿@model giao_dien_demo.Models.Employee
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    body {
+        background: #f5f7fa;
+    }
+
+    .form-container {
+        width: 400px;
+        margin: 50px auto;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        background: white;
+        animation: fadeIn 0.5s ease;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-weight: bold;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0 15px 0;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+        input:focus {
+            border-color: #4A90E2;
+            box-shadow: 0 0 5px #4A90E2;
+            outline: none;
+        }
+
+    .btn-save {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        background: #28a745;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+        .btn-save:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 15px;
+        color: #4A90E2;
+        text-decoration: none;
+    }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="form-container">
+    <h2>➕ Thêm nhân viên</h2>
+
+    <form id="createForm" method="post">
+        <label>Tên:</label>
+        <input name="Name" required />
+
+        <label>Phòng ban:</label>
+        <input name="Department" required />
+
+        <label>Chức vụ:</label>
+        <input name="Position" required />
+
+        <label>Lương:</label>
+        <input name="Salary" type="number" required />
+
+        <button type="submit" class="btn-save">💾 Lưu</button>
+    </form>
+
+    <a href="/Employee" class="back-link">⬅ Quay lại</a>
+</div>
+
+<script>
+    document.getElementById("createForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        Swal.fire({
+            title: 'Xác nhận?',
+            text: "Bạn muốn thêm nhân viên?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Thêm',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                e.target.submit();
+            }
+        });
+    });
+</script>

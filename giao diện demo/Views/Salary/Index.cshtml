@@ -1,0 +1,31 @@
+﻿@model List<giao_dien_demo.Models.Salary>
+
+<h2>💰 Bảng lương (theo giờ)</h2>
+
+<a asp-controller="Dashboard" asp-action="Index">⬅ Quay về</a>
+
+<br />
+<br />
+
+<table border="1" cellpadding="10" style="width:100%">
+    <tr style="background:#ff9800; color:white;">
+        <th>ID</th>
+        <th>Nhân viên</th>
+        <th>Số giờ làm</th>
+        <th>Tổng lương</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Id</td>
+            <td>@item.EmployeeName</td>
+
+            <!-- 🔥 FIX -->
+            <td>@item.HoursWorked.ToString("0.00") giờ</td>
+
+            <!-- 🔥 FORMAT TIỀN -->
+            <td>@item.TotalSalary.ToString("N0") VNĐ</td>
+        </tr>
+    }
+</table>

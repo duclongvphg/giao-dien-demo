@@ -1,0 +1,42 @@
+﻿@model List<giao_dien_demo.Models.Attendance>
+
+<h2>⏰ Chấm công</h2>
+
+<a asp-controller="Dashboard" asp-action="Index">⬅ Quay về</a>
+
+<br />
+<br />
+
+<a asp-action="CheckIn" class="btn btn-success">✅ Check In</a>
+
+<br />
+<br />
+
+<table border="1" cellpadding="10" style="width:100%">
+    <tr style="background:#4CAF50; color:white;">
+        <th>ID</th>
+        <th>Nhân viên</th>
+        <th>Check In</th>
+        <th>Check Out</th>
+        <th>Hành động</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@item.Id</td>
+            <td>@item.EmployeeName</td>
+            <td>@item.CheckIn</td>
+            <td>@item.CheckOut</td>
+            <td>
+                @if (item.CheckOut == null)
+                {
+                    <a asp-action="CheckOut" asp-route-id="@item.Id">❌ Check Out</a>
+                }
+            </td>
+        </tr>
+    }
+    <a asp-controller="Attendance" asp-action="Index">
+        ⏰ Chấm công
+    </a>
+</table>

@@ -1,0 +1,130 @@
+﻿@model giao_dien_demo.Models.Employee
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    body {
+        background: #f5f7fa;
+    }
+
+    .form-container {
+        width: 400px;
+        margin: 50px auto;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        background: white;
+        animation: fadeIn 0.5s ease;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-weight: bold;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0 15px 0;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        transition: 0.3s;
+    }
+
+        input:focus {
+            border-color: #4A90E2;
+            box-shadow: 0 0 5px #4A90E2;
+            outline: none;
+        }
+
+    .btn-save {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        background: #4A90E2;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+        .btn-save:hover {
+            background: #357ABD;
+            transform: scale(1.05);
+        }
+
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 15px;
+        color: #4A90E2;
+        text-decoration: none;
+    }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+    /* 🔥 FIX LỖI RAZOR */
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="form-container">
+    <h2>✏️ Sửa nhân viên</h2>
+
+    <form id="editForm" method="post">
+        <input type="hidden" name="Id" value="@Model.Id" />
+
+        <label>Tên:</label>
+        <input name="Name" value="@Model.Name" required />
+
+        <label>Phòng ban:</label>
+        <input name="Department" value="@Model.Department" required />
+
+        <label>Chức vụ:</label>
+        <input name="Position" value="@Model.Position" required />
+
+        <label>Lương:</label>
+        <input name="Salary" value="@Model.Salary" required type="number" />
+
+        <button type="submit" class="btn-save">💾 Cập nhật</button>
+    </form>
+
+    <a href="/Employee" class="back-link">⬅ Quay lại</a>
+</div>
+
+<script>
+    document.getElementById("editForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        Swal.fire({
+            title: 'Xác nhận?',
+            text: "Bạn muốn cập nhật thông tin?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Cập nhật',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // submit thật
+                e.target.submit();
+            }
+        });
+    });
+</script>

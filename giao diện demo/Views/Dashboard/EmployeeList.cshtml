@@ -1,0 +1,120 @@
+﻿@model List<giao_dien_demo.Models.Employee>
+
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        min-height: 100vh;
+        color: white;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+        animation: fadeInDown 0.6s ease;
+    }
+
+    .table-container {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        animation: fadeInUp 0.8s ease;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: white;
+    }
+
+    th {
+        background: rgba(255,255,255,0.2);
+        padding: 12px;
+    }
+
+    td {
+        padding: 12px;
+        border-top: 1px solid rgba(255,255,255,0.2);
+    }
+
+    tr {
+        transition: 0.3s;
+    }
+
+        tr:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.01);
+        }
+
+    /* nút quay lại */
+    .back-btn {
+        display: inline-block;
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #00c6ff, #0072ff);
+        color: white;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+    /* animation */
+    @@keyframes fadeInUp {
+        from {
+            transform: translateY(30px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeInDown {
+        from {
+            transform: translateY(-30px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<h2>📋 Danh sách nhân viên</h2>
+
+<a asp-controller="Dashboard" asp-action="Index" class="back-btn">
+    ⬅ Quay lại Dashboard
+</a>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>👤 Tên</th>
+                <th>🏢 Phòng ban</th>
+                <th>💼 Chức vụ</th>
+                <th>💰 Lương</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in Model)
+            {
+                <tr>
+                    <td>@emp.Name</td>
+                    <td>@emp.Department</td>
+                    <td>@emp.Position</td>
+                    <td>@emp.Salary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

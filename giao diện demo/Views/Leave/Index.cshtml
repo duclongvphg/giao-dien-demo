@@ -1,0 +1,56 @@
+﻿@model List<giao_dien_demo.Models.Leave>
+
+<h2>📄 Nghỉ phép</h2>
+
+<a asp-controller="Dashboard" asp-action="Index">⬅ Quay về</a>
+
+<br />
+<br />
+
+<a asp-action="Create">➕ Tạo đơn nghỉ</a>
+
+<br />
+<br />
+
+<table border="1" cellpadding="10" style="width:100%">
+    <tr style="background:#2196F3; color:white;">
+        <th>ID</th>
+        <th>Nhân viên</th>
+        <th>Từ ngày</th>
+        <th>Đến ngày</th>
+        <th>Lý do</th>
+        <th>Hành động</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr id="row-@item.Id">
+            <td>@item.Id</td>
+            <td>@item.EmployeeName</td>
+            <td>@item.FromDate.ToShortDateString()</td>
+            <td>@item.ToDate.ToShortDateString()</td>
+            <td>@item.Reason</td>
+            <td>
+                <a href="javascript:void(0)" onclick="deleteLeave(@item.Id)">❌ Xóa</a>
+            </td>
+        </tr>
+    }
+</table>
+
+<script>
+    function deleteLeave(id) {
+
+        if (!confirm("Bạn chắc chắn muốn xóa?")) return;
+
+        let row = document.getElementById("row-" + id);
+
+        fetch('/Leave/Delete?id=' + id, {
+            method: 'POST'
+        })
+        .then(res => {
+            if (res.ok) {
+                row.remove();
+            }
+        });
+    }
+</script>
