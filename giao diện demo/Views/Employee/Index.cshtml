@@ -1,104 +1,219 @@
 ﻿@model List<giao_dien_demo.Models.Employee>
 
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@{
+    ViewData["Title"] = "👥 Quản lý nhân viên";
+    // Lấy danh sách phòng ban từ Controller truyền qua
+    var departments = ViewBag.Departments as List<string> ?? new List<string>();
+}
 
-<a asp-controller="Dashboard" asp-action="Index" class="btn-back">
-    ⬅ Quay về trang chủ
-</a>
-
-<h2>Quản lý nhân viên</h2>
-
-<br />
-
-<a asp-controller="Employee" asp-action="Create">➕ Thêm nhân viên</a>
-
-<br />
-<br />
-
-<table border="1" cellpadding="10" style="width:100%">
-    <tr style="background:#4A90E2; color:white;">
-        <th>ID</th>
-        <th>Tên</th>
-        <th>Phòng ban</th>
-        <th>Chức vụ</th>
-        <th>Lương</th>
-        <th>Hành động</th>
-    </tr>
-
-    @foreach (var item in Model)
-    {
-        <tr id="row-@item.Id">
-            <td>@item.Id</td>
-            <td>@item.Name</td>
-            <td>@item.Department</td>
-            <td>@item.Position</td>
-            <td>@item.Salary</td>
-            <td>
-                <a asp-controller="Employee" asp-action="Edit" asp-route-id="@item.Id">✏️ Sửa</a> |
-
-                <a href="javascript:void(0)" onclick="deleteEmployee(@item.Id)">
-                    ❌ Xóa
-                </a>
-            </td>
-        </tr>
+<style>
+    .table th, .table td { text-align: center !important; vertical-align: middle !important; }
+    .salary-text { color: #2ecc71; font-weight: bold; }
+    .position-badge {
+        padding: 5px 12px; border-radius: 15px; font-size: 11px;
+        font-weight: bold; background: #eef2f7; color: #34495e; border: 1px solid #d1d9e6;
     }
-</table>
+    .profile-badge {
+        padding: 5px 12px; border-radius: 15px; font-size: 11px;
+        font-weight: bold; background: #e0f7fa; color: #00838f; border: 1px solid #b2ebf2;
+        cursor: pointer; transition: 0.3s; text-decoration: none; display: inline-block;
+    }
+    .profile-badge:hover { background: #00acc1; color: white; }
+    .row-removed { transform: translateX(50px); opacity: 0; transition: all 0.5s ease; }
+    .card { border-radius: 12px; transition: all 0.3s; }
+    .filter-card { background: #f8f9fa; border: 1px solid #e3e6f0; }
+</style>
 
-<script>
-    function deleteEmployee(id) {
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-controller="HR" asp-action="Index" class="btn btn-outline-secondary btn-sm">⬅ Quay về Dashboard HR</a>
+        </div>
+        <h2 class="fw-bold m-0 text-dark">👥 Danh sách hồ sơ nhân sự hệ thống</h2>
+        <div style="width: 150px;"></div>
+    </div>
 
-        Swal.fire({
-            title: 'Bạn chắc chắn?',
-            text: "Dữ liệu sẽ bị xóa!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Xóa',
-            cancelButtonText: 'Hủy'
-        }).then((result) => {
+    <div class="card shadow-sm border-0 mb-4 filter-card">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        @* 🔥 ĐÃ CẬP NHẬT: Placeholder thông báo tìm được cả Tên và Mã *@
+                        <input type="text" name="searchName" class="form-control border-start-0" 
+                               placeholder="Tìm tên hoặc mã nhân viên (VD: NV001)..." value="@ViewBag.CurrentSearch">
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <select name="department" class="form-select">
+                        <option value="">-- Tất cả phòng ban --</option>
+                        @foreach (var dept in departments)
+                        {
+                            <option value="@dept" selected="@(dept == ViewBag.CurrentDept ? "selected" : null)">
+                                @dept
+                            </option>
+                        }
+                    </select>
+                </div>
 
-            if (!result.isConfirmed) return;
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i> Lọc dữ liệu
+                    </button>
+                    <a href="/Employee/Index" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-            let row = document.getElementById("row-" + id);
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-bordered table-hover mb-0" style="border-radius: 12px; overflow: hidden;">
+                <thead style="background:#4A90E2; color:white;">
+                    <tr>
+                        <th style="width:70px;">STT</th>
+                        <th>Mã NV</th> 
+                        <th>Họ và Tên</th>
+                        <th>Phòng ban</th>
+                        <th>Chức vụ</th>
+                        <th>Hồ sơ</th> 
+                        <th>Trạng thái</th>
+                        <th>Mức lương</th>
+                        <th style="width:180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                    @if (Model != null && Model.Any())
+                    {
+                        int stt = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr id="row-@item.Id">
+                                <td class="stt-cell">@stt</td>
+                                
+                                <td>
+                                    <span class="badge @(string.IsNullOrEmpty(item.EmployeeCode) ? "bg-info" : "bg-secondary")" style="font-size: 12px; min-width: 60px;">
+                                        @(string.IsNullOrEmpty(item.EmployeeCode) ? "NV-MỚI" : item.EmployeeCode)
+                                    </span>
+                                </td>
+                                
+                                <td class="text-start ps-4"><strong>👤 @item.Name</strong></td>
+                                <td>@item.Department</td>
+                                
+                                <td class="text-primary fw-bold">
+                                    @(string.IsNullOrEmpty(item.JobTitle) ? "Chưa cập nhật" : item.JobTitle)
+                                </td>
 
-            // animation
-            row.style.transition = "all 0.5s ease";
-            row.style.opacity = "0";
-            row.style.transform = "translateX(-100px)";
-            row.style.backgroundColor = "#ffcccc";
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="profile-badge">
+                                        <i class="fas fa-eye me-1"></i> Xem hồ sơ
+                                    </a>
+                                </td>
 
-            // 🔥 FIX QUAN TRỌNG NHẤT: thêm header chống lỗi ASP.NET
-            fetch('/Employee/Delete?id=' + id, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                if (response.ok) {
+                                <td><span class="position-badge">@item.Position</span></td>
+                                
+                                <td>
+                                    <div class="salary-text" style="font-size: 15px;">
+                                        @item.Salary.ToString("N0") VNĐ
+                                    </div>
+                                    <div class="text-muted" style="font-size: 11px;">
+                                        (≈ @item.HourlyRate.ToString("N0") VNĐ/giờ)
+                                    </div>
+                                </td>
 
-                    setTimeout(() => {
-                        row.remove();
+                                <td>
+                                    <div class="btn-group">
+                                        <a asp-controller="Employee" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <button onclick="deleteEmployee(@item.Id)" class="btn btn-sm btn-outline-danger ms-2">
+                                            <i class="fas fa-trash-alt"></i> Xóa
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            stt++;
+                        }
+                    }
+                    else
+                    {
+                        <tr id="emptyRow">
+                            <td colspan="9" class="text-center text-muted" style="padding: 60px;">
+                                <div class="mb-3" style="font-size: 40px;">📂</div>
+                                <h5 class="fw-bold">Không tìm thấy dữ liệu nhân sự</h5>
+                                <i>Vui lòng kiểm tra lại từ khóa hoặc mã nhân viên.</i>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-                        Swal.fire({
-                            toast: true,
-                            position: 'top-end',
-                            icon: 'success',
-                            title: 'Đã xóa!',
-                            showConfirmButton: false,
-                            timer: 2000
-                        });
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
-                    }, 500);
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dashboardHub")
+            .withAutomaticReconnect()
+            .build();
 
-                } else {
-                    Swal.fire('Lỗi!', 'Xóa thất bại!', 'error');
-                }
-            })
-            .catch(() => {
-                Swal.fire('Lỗi!', 'Có lỗi xảy ra!', 'error');
+        connection.on("ContractApproved", function (employeeName) {
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'success',
+                title: `Hệ thống: ${employeeName} đã được thêm vào danh sách!`,
+                showConfirmButton: false, timer: 3000
             });
-
+            setTimeout(() => { location.reload(); }, 1500);
         });
-    }
-</script>
+
+        async function startConnection() {
+            try { await connection.start(); } 
+            catch (err) { setTimeout(startConnection, 5000); }
+        }
+        startConnection();
+
+        function updateSTT() {
+            const rows = document.querySelectorAll("#employeeTableBody tr:not(#emptyRow)");
+            rows.forEach((row, index) => {
+                let sttCell = row.querySelector(".stt-cell");
+                if (sttCell) sttCell.innerText = index + 1;
+            });
+            if (rows.length === 0) {
+                document.getElementById("employeeTableBody").innerHTML = '<tr id="emptyRow"><td colspan="9" class="text-center text-muted" style="padding: 60px;"><i>Danh sách hiện đang trống.</i></td></tr>';
+            }
+        }
+
+        function deleteEmployee(id) {
+            Swal.fire({
+                title: 'Xác nhận xóa?',
+                text: 'Dữ liệu hồ sơ sẽ bị xóa vĩnh viễn!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Đồng ý xóa'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/Employee/Delete', { id: id }, function() {
+                        let row = document.getElementById("row-" + id);
+                        if (row) {
+                            row.classList.add("row-removed");
+                            setTimeout(() => {
+                                row.remove();
+                                updateSTT();
+                            }, 500);
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

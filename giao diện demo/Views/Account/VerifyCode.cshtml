@@ -1,0 +1,27 @@
+﻿@{ Layout = null; }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Xác thực mã - HRMS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body { background-color: #1a202c; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .auth-card { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <div class="auth-card text-center">
+        <h3 class="mb-4">🔐 Xác thực</h3>
+        <p class="small text-muted">Vui lòng nhập mã xác nhận 6 chữ số đã được gửi tới Gmail của bạn.</p>
+
+        @if (ViewBag.Error != null) { <div class="alert alert-danger small">@ViewBag.Error</div> }
+
+        <form asp-action="VerifyCode" method="post">
+            <input type="text" name="code" class="form-control mb-3 text-center fw-bold" maxlength="6" placeholder="------" style="font-size: 24px; letter-spacing: 5px;" required />
+            <button type="submit" class="btn btn-success w-100 mb-3">Xác nhận mã</button>
+            <p class="small text-muted">Không nhận được mã? <a href="javascript:history.back()">Gửi lại</a></p>
+        </form>
+    </div>
+</body>
+</html>

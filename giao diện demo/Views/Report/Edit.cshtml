@@ -1,0 +1,46 @@
+﻿@model giao_dien_demo.Models.Report
+
+<h2>📝 Chỉnh sửa Báo cáo: @Model.EmployeeName</h2>
+<hr />
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label>Thưởng Lễ</label>
+            <input asp-for="HolidayBonus" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label>Thưởng Chuyên cần</label>
+            <input asp-for="DiligenceBonus" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label>Khen thưởng</label>
+            <input asp-for="Reward" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label>Kỷ luật</label>
+            <input asp-for="Discipline" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label>Số ngày nghỉ</label>
+            <input asp-for="LeaveDays" type="number" class="form-control" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label>Loại nghỉ</label>
+            <select asp-for="LeaveType" class="form-select">
+                <option value="Có phép">Có phép</option>
+                <option value="Không phép">Không phép</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label>Trạng thái nhiệm vụ</label>
+            <select asp-for="TaskStatus" class="form-select">
+                <option value="Hoàn thành">Hoàn thành</option>
+                <option value="Đang thực hiện">Đang thực hiện</option>
+                <option value="Chưa đạt">Chưa đạt</option>
+            </select>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-success">✅ Lưu cập nhật</button>
+    <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+</form>

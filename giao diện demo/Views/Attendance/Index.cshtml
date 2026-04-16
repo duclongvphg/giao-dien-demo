@@ -1,42 +1,260 @@
 ﻿@model List<giao_dien_demo.Models.Attendance>
+@{
+    ViewData["Title"] = "⏰ Chấm công";
+}
 
-<h2>⏰ Chấm công</h2>
+<style>
+    /* Căn giữa bảng dữ liệu */
+    .table th, .table td { text-align: center; vertical-align: middle !important; }
 
-<a asp-controller="Dashboard" asp-action="Index">⬅ Quay về</a>
-
-<br />
-<br />
-
-<a asp-action="CheckIn" class="btn btn-success">✅ Check In</a>
-
-<br />
-<br />
-
-<table border="1" cellpadding="10" style="width:100%">
-    <tr style="background:#4CAF50; color:white;">
-        <th>ID</th>
-        <th>Nhân viên</th>
-        <th>Check In</th>
-        <th>Check Out</th>
-        <th>Hành động</th>
-    </tr>
-
-    @foreach (var item in Model)
-    {
-        <tr>
-            <td>@item.Id</td>
-            <td>@item.EmployeeName</td>
-            <td>@item.CheckIn</td>
-            <td>@item.CheckOut</td>
-            <td>
-                @if (item.CheckOut == null)
-                {
-                    <a asp-action="CheckOut" asp-route-id="@item.Id">❌ Check Out</a>
-                }
-            </td>
-        </tr>
+    /* Hệ thống Toast Notification */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    .custom-toast {
+        min-width: 280px; padding: 15px 20px; border-radius: 12px; color: white;
+        font-weight: bold; margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        display: none; animation: slideIn 0.5s forwards;
     }
-    <a asp-controller="Attendance" asp-action="Index">
-        ⏰ Chấm công
-    </a>
-</table>
+    .toast-success { background: linear-gradient(45deg, #2ecc71, #27ae60); }
+    .toast-error { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+    @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Làm đẹp nút bấm */
+    .btn-action { font-weight: bold; border-radius: 8px; transition: 0.3s; }
+    .btn-action:hover { transform: scale(1.05); }
+
+    /* Tùy chỉnh FullCalendar */
+    #attendanceCalendar { max-width: 100%; margin: 0 auto; font-family: Arial, sans-serif; }
+    .fc-event { cursor: pointer; border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; border: none !important; font-size: 0.85em; }
+    .fc-toolbar-title { font-weight: bold; color: #2c3e50; text-transform: capitalize; }
+    
+    /* Box tìm kiếm lịch */
+    .search-date-box { background-color: #f8f9fa; padding: 8px 15px; border-radius: 8px; border: 1px solid #dee2e6; }
+</style>
+
+<div id="toast-container"></div>
+
+<div class="container-fluid mt-3 mb-5">
+    <h2 class="mb-4">⏰ Hệ thống Chấm công Real-time</h2>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">⬅ Quay về</a>
+        
+        <button onclick="handleAttendance('CheckIn')" class="btn btn-success btn-lg btn-action shadow-sm">
+            ✅ Bấm Check In Ngay
+        </button>
+    </div>
+
+    <div class="card shadow-sm mb-5" style="border-radius: 12px;">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="fas fa-list"></i> Danh sách thao tác</h5>
+            <table class="table table-bordered table-hover">
+                <thead style="background:#4CAF50; color:white;">
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Nhân viên</th>
+                        <th>Thời gian Check In</th>
+                        <th>Thời gian Check Out</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr id="row-@item.Id">
+                                <td>@item.Id</td>
+                                <td><strong>@item.EmployeeName</strong></td>
+                                <td class="text-primary">@item.CheckIn.ToString("HH:mm:ss dd/MM/yyyy")</td>
+                                <td id="checkout-time-@item.Id" class="text-danger">
+                                    @(item.CheckOut.HasValue ? item.CheckOut.Value.ToString("HH:mm:ss dd/MM/yyyy") : "---")
+                                </td>
+                                <td>
+                                    @if (item.CheckOut == null)
+                                    {
+                                        <button onclick="handleAttendance('CheckOut', @item.Id)" class="btn btn-danger btn-sm btn-action">
+                                            ❌ Check Out
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Đã hoàn thành</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="5" class="text-center text-muted">Hôm nay bạn chưa có dữ liệu chấm công.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-3 d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h5 class="fw-bold text-dark"><i class="fas fa-calendar-alt text-primary me-2"></i> Lịch sử chấm công tổng hợp</h5>
+                <p class="text-muted small mb-2 mb-md-0">Bấm vào ngày bất kỳ để xem danh sách nhân viên chấm công chi tiết.</p>
+            </div>
+            
+            <div class="search-date-box d-flex align-items-center shadow-sm">
+                <label for="searchDate" class="fw-bold me-2 mb-0 text-dark"><i class="fas fa-search me-1 text-primary"></i>Đến ngày:</label>
+                <input type="date" id="searchDate" class="form-control form-control-sm me-2 border-primary" style="width: 150px; cursor: pointer;">
+                <button type="button" onclick="jumpToDate()" class="btn btn-primary btn-sm fw-bold">Tra cứu</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="attendanceCalendar"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        var attendanceCalendar; 
+
+        // --- 1. CẤU HÌNH FULLCALENDAR ---                
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('attendanceCalendar');
+
+            attendanceCalendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth', 
+                locale: 'vi', 
+                firstDay: 1,
+                height: 700,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek' 
+                },
+                buttonText: {
+                    today: 'Hôm nay', month: 'Tháng', week: 'Tuần', list: 'Danh sách'
+                },
+                events: '/Attendance/GetAttendanceHistory',
+                
+                eventClick: function(info) {
+                    showAttendanceDetails(info.event.startStr);
+                },
+                dateClick: function(info) {
+                    showAttendanceDetails(info.dateStr);
+                }
+            });
+
+            attendanceCalendar.render();
+        });
+
+        // --- 🔥 2. HÀM HIỂN THỊ POPUP DANH SÁCH CHẤM CÔNG ---
+        function showAttendanceDetails(dateStr) {
+            let d = new Date(dateStr);
+            let displayDate = d.toLocaleDateString('vi-VN');
+
+            Swal.fire({
+                title: 'Đang tải dữ liệu...',
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            $.get('/Attendance/GetAttendanceDetailsByDate?date=' + dateStr, function(data) {
+                if(data.length === 0) {
+                    Swal.fire('Trống', 'Không có dữ liệu chấm công trong ngày ' + displayDate, 'info');
+                    return;
+                }
+
+                // Chuyển sang nối chuỗi truyền thống để chống lỗi Razor
+                let html = '<div class="text-end mb-2">' +
+                           '<button class="btn btn-sm btn-outline-success fw-bold shadow-sm" onclick="exportToWord(\'' + displayDate + '\')">' +
+                           '<i class="fas fa-file-word"></i> Xuất file Word</button></div>' +
+                           '<table id="exportTable" class="table table-bordered table-hover text-center mt-2" style="font-size: 15px; width: 100%;" border="1">' +
+                           '<thead style="background-color: #f8f9fa;"><tr><th>Nhân viên</th><th>Giờ vào</th><th>Giờ ra</th><th>Ghi chú</th></tr></thead><tbody>';
+                
+                data.forEach(function(item) {
+                    let textClass = item.isLate ? "color: red; font-weight: bold;" : "color: green;";
+                    let bsClass = item.isLate ? "text-danger fw-bold" : "text-success";
+                    html += '<tr>' +
+                                '<td class="text-start fw-bold">👤 ' + item.empName + '</td>' +
+                                '<td class="text-primary fw-bold">' + item.checkIn + '</td>' +
+                                '<td class="text-secondary">' + item.checkOut + '</td>' +
+                                '<td class="' + bsClass + '" style="' + textClass + '">' + item.note + '</td>' +
+                            '</tr>';
+                });
+                html += '</tbody></table>';
+
+                Swal.fire({
+                    title: '📅 Báo cáo Chấm công',
+                    html: '<p class="text-muted mb-0">Dữ liệu ngày: <strong class="text-dark">' + displayDate + '</strong></p>' + html,
+                    width: '800px',
+                    showConfirmButton: false, 
+                    showCloseButton: true,
+                    focusConfirm: false
+                });
+            });
+        }
+
+        // --- 🔥 HÀM MỚI: XUẤT BẢNG HTML THÀNH FILE WORD ---
+        function exportToWord(dateStr) {
+            var tableHTML = document.getElementById("exportTable").outerHTML;
+            
+            // Cắt nhỏ các thẻ HTML để Visual Studio (Razor) không bị nhầm lẫn
+            var header = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><ti" + "tle>Bao Cao</ti" + "tle></he" + "ad><bo" + "dy>";
+            var title = "<h2 style='text-align: center; color: #333;'>BÁO CÁO CHẤM CÔNG - NGÀY " + dateStr + "</h2>";
+            var footer = "</bo" + "dy></ht" + "ml>";
+            
+            var sourceHTML = header + title + tableHTML + footer;
+            
+            var source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            var fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = 'Bao_Cao_Cham_Cong_' + dateStr.replace(/\//g, '-') + '.doc';
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+            
+            showToast("Đã tải xuống file Word thành công!", true);
+        }
+
+        // --- 3. HÀM XỬ LÝ NHẢY ĐẾN NGÀY CỤ THỂ ---        
+        function jumpToDate() {
+            var selectedDate = document.getElementById("searchDate").value;
+            if (selectedDate) {
+                attendanceCalendar.gotoDate(selectedDate);
+                showToast("Đã chuyển đến ngày: " + selectedDate.split('-').reverse().join('/'), true);
+            } else {
+                showToast("Vui lòng chọn ngày để tra cứu!", false);
+            }
+        }
+
+        // --- 4. KẾT NỐI SIGNALR ĐỂ ĐỒNG BỘ DASHBOARD ---                        
+        const connection = new signalR.HubConnectionBuilder().withUrl("/dashboardHub").withAutomaticReconnect().build();
+        async function startConnection() {
+            try { await connection.start(); console.log("Realtime Connected!"); } 
+            catch (err) { setTimeout(startConnection, 5000); }
+        }
+        startConnection();
+
+        // --- 5. HÀM HIỆN THÔNG BÁO TOAST ---                        
+        function showToast(message, isSuccess = true) {
+            const id = 'toast-' + Date.now();
+            $('#toast-container').append(`<div id="${id}" class="custom-toast ${isSuccess ? 'toast-success' : 'toast-error'}">${isSuccess ? '✅' : '❌'} ${message}</div>`);
+            $(`#${id}`).fadeIn();
+            setTimeout(() => { $(`#${id}`).fadeOut(() => $(`#${id}`).remove()); }, 3000);
+        }
+
+        // --- 6. HÀM XỬ LÝ CHECK-IN / CHECK-OUT BẰNG AJAX ---                        
+        function handleAttendance(action, id = null) {
+            const url = id ? `/Attendance/${action}?id=${id}` : `/Attendance/${action}`;
+            $.post(url, function (data) {
+                showToast(`Thực hiện ${action} thành công!`, true);
+                setTimeout(() => { location.reload(); }, 1000);
+            }).fail(function () {
+                showToast("Bạn đã thực hiện thao tác này rồi hoặc có lỗi xảy ra!", false);
+            });
+        }
+    </script>
+}

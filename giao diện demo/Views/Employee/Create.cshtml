@@ -1,6 +1,5 @@
 ﻿@model giao_dien_demo.Models.Employee
 
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
@@ -9,7 +8,7 @@
     }
 
     .form-container {
-        width: 400px;
+        width: 450px; 
         margin: 50px auto;
         padding: 30px;
         border-radius: 15px;
@@ -25,39 +24,44 @@
 
     label {
         font-weight: bold;
+        color: #333;
     }
 
-    input {
+    input, select {
         width: 100%;
         padding: 10px;
         margin: 8px 0 15px 0;
         border-radius: 8px;
         border: 1px solid #ccc;
         transition: 0.3s;
+        box-sizing: border-box;
+        font-family: inherit;
     }
 
-        input:focus {
-            border-color: #4A90E2;
-            box-shadow: 0 0 5px #4A90E2;
-            outline: none;
-        }
+    input:focus, select:focus {
+        border-color: #4A90E2;
+        box-shadow: 0 0 5px #4A90E2;
+        outline: none;
+    }
 
     .btn-save {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         border: none;
         border-radius: 8px;
         background: #28a745;
         color: white;
         font-weight: bold;
+        font-size: 16px;
         cursor: pointer;
         transition: 0.3s;
+        margin-top: 10px;
     }
 
-        .btn-save:hover {
-            background: #218838;
-            transform: scale(1.05);
-        }
+    .btn-save:hover {
+        background: #218838;
+        transform: scale(1.02);
+    }
 
     .back-link {
         display: block;
@@ -65,22 +69,16 @@
         margin-top: 15px;
         color: #4A90E2;
         text-decoration: none;
+        font-weight: 500;
     }
 
-        .back-link:hover {
-            text-decoration: underline;
-        }
+    .back-link:hover {
+        text-decoration: underline;
+    }
 
     @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
@@ -88,22 +86,61 @@
     <h2>➕ Thêm nhân viên</h2>
 
     <form id="createForm" method="post">
-        <label>Tên:</label>
-        <input name="Name" required />
+        <label>Tên nhân viên:</label>
+        <input name="Name" placeholder="Nhập họ và tên..." required />
 
         <label>Phòng ban:</label>
-        <input name="Department" required />
+        <input name="Department" placeholder="Ví dụ: Ban Giám đốc hoặc Phòng IT" required />
 
-        <label>Chức vụ:</label>
-        <input name="Position" required />
+        <label>Trạng thái hợp đồng:</label>
+        <select name="Position" required>
+            <option value="Chính thức">Chính thức</option>
+            <option value="Thử việc">Thử việc</option>
+            <option value="Thực tập">Thực tập</option>
+            <option value="Thời vụ">Thời vụ</option>
+        </select>
 
-        <label>Lương:</label>
-        <input name="Salary" type="number" required />
+        <label>Vị trí công việc (Chức vụ):</label>
+        <select name="JobTitle" required>
+            <option value="" disabled selected>-- Chọn chức vụ --</option>
+            
+            <optgroup label="1. Ban Giám đốc">
+                <option value="Giám đốc điều hành (CEO)">Giám đốc điều hành (CEO)</option>
+                <option value="Giám đốc Kỹ thuật (CTO)">Giám đốc Kỹ thuật (CTO)</option>
+                <option value="Giám đốc Nhân sự (CHRO)">Giám đốc Nhân sự (CHRO)</option>
+            </optgroup>
+            
+            <optgroup label="2. Cấp Quản lý">
+                @* 🔥 ĐÃ THÊM: Vị trí Quản trị viên hệ thống *@
+                <option value="Quản trị viên hệ thống (System Admin)">Quản trị viên hệ thống (System Admin)</option>
+                <option value="Quản lý Dự án (PM)">Quản lý Dự án (PM)</option>
+                <option value="Trưởng phòng Kỹ thuật">Trưởng phòng Kỹ thuật</option>
+                <option value="Trưởng phòng Nhân sự (HR)">Trưởng phòng Nhân sự (HR)</option>
+                <option value="Trưởng phòng Kinh doanh (Sales)">Trưởng phòng Kinh doanh (Sales)</option>
+            </optgroup>           
+            
+            <optgroup label="3. Cấp Nhân viên">
+                <option value="Lập trình viên (Senior)">Lập trình viên (Senior)</option>
+                <option value="Lập trình viên (Junior/Mid)">Lập trình viên (Junior/Mid)</option>
+                <option value="Phân tích nghiệp vụ (BA)">Phân tích nghiệp vụ (BA)</option>
+                <option value="Kiểm thử phần mềm (Tester/QA)">Kiểm thử phần mềm (Tester/QA)</option>
+            </optgroup>
+            
+            <optgroup label="4. Khối Back-Office">
+                <option value="Chuyên viên Nhân sự">Chuyên viên Nhân sự</option>
+                <option value="Kế toán viên">Kế toán viên</option>
+                <option value="Nhân viên Kinh doanh (Sales)">Nhân viên Kinh doanh (Sales)</option>
+                <option value="Thực tập sinh (Intern)">Thực tập sinh (Intern)</option>
+            </optgroup>
+        </select>
 
-        <button type="submit" class="btn-save">💾 Lưu</button>
+        <label>Lương cơ bản (VNĐ):</label>
+        <input name="Salary" type="number" placeholder="Ví dụ: 15000000" required />
+
+        <button type="submit" class="btn-save">💾 Lưu dữ liệu</button>
     </form>
 
-    <a href="/Employee" class="back-link">⬅ Quay lại</a>
+    <a href="/Employee" class="back-link">⬅ Quay lại danh sách</a>
 </div>
 
 <script>
@@ -112,13 +149,16 @@
 
         Swal.fire({
             title: 'Xác nhận?',
-            text: "Bạn muốn thêm nhân viên?",
+            text: "Bạn muốn thêm nhân viên mới vào hệ thống?",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Thêm',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Đồng ý thêm',
             cancelButtonText: 'Hủy'
         }).then((result) => {
             if (result.isConfirmed) {
+                // Submit form thật sự sau khi người dùng đồng ý trên SweetAlert
                 e.target.submit();
             }
         });

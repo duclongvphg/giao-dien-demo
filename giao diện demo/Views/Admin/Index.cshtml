@@ -1,0 +1,251 @@
+﻿@using giao_dien_demo.Models
+@inject giao_dien_demo.Data.ApplicationDbContext _context
+
+@{
+    ViewData["Title"] = "📊 Trang chủ hệ thống";
+
+    var users = _context.Users.ToList();
+
+    var total = users.Count;
+    var working = users.Count(x => x.IsOnline);
+    var leave = users.Count(x => !x.IsOnline);
+}
+
+<div class="dashboard-cards">
+
+    <div class="card blue">
+        👨‍💼 Tổng nhân viên
+        <div class="number" id="totalCount">@total</div>
+    </div>
+
+    <div class="card green">
+        ✅ Đang làm
+        <div class="number" id="workingCount">@working</div>
+    </div>
+
+    <div class="card red">
+        ❌ Nghỉ việc
+        <div class="number" id="leaveCount">@leave</div>
+    </div>
+
+</div>
+
+<!-- TÌM KIẾM + THÊM -->
+<div style="margin-top:30px; margin-bottom:20px; display:flex; gap:15px; align-items:center;">
+
+    <input type="text"
+           id="searchInput"
+           class="form-control"
+           placeholder="🔍 Tìm kiếm tài khoản..."
+           style="max-width:400px;" />
+
+    <a asp-controller="Account"
+           asp-action="Register"
+           class="btn btn-success">
+        ➕ Thêm tài khoản
+    </a>
+
+</div>
+
+<!-- BẢNG TÀI KHOẢN -->
+<div class="account-table-wrapper">
+
+    <h3 style="margin-bottom:20px;">📋 Danh sách tài khoản</h3>
+
+    <div style="overflow-x:auto;">
+        <table class="table table-hover table-bordered" style="min-width:1100px;">
+            <thead class="table-primary">
+                <tr>
+                    <th style="width:80px;">STT</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th style="min-width:420px;">Hành động</th>
+                </tr>
+            </thead>
+
+            <tbody id="accountTableBody">
+                @{
+                    int stt = 1;
+                }
+
+                @foreach (var user in users)
+                {
+                    <tr id="row-@user.Id">
+                        <td>@stt</td>
+                        <td>@user.FullName</td>
+                        <td>@user.Role</td>
+
+                        <td>
+                            @if (user.IsOnline)
+                            {
+                                <span style="color:green; font-weight:bold;">
+                                    Đang hoạt động
+                                </span>
+                            }
+                            else
+                            {
+                                var minutes = user.LastActive.HasValue
+                                    ? (int)(DateTime.Now - user.LastActive.Value).TotalMinutes
+                                    : 0;
+
+                                <span style="color:gray;">
+                                    Đã hoạt động @minutes phút trước
+                                </span>
+                            }
+                        </td>
+
+                        <td>
+                            <a asp-controller="Admin"
+                                   asp-action="Details"
+                                   asp-route-id="@user.Id">
+                                👁 Xem
+                            </a>
+
+                            |
+
+                            <a asp-controller="Admin"
+                                   asp-action="EditUser"
+                                   asp-route-id="@user.Id">
+                                ✏ Sửa
+                            </a>
+
+                            |
+
+                            <a href="javascript:void(0)"
+                                   onclick="deleteWithUndo(@user.Id, this)">
+                                🗑 Xóa
+                            </a>
+
+                            |
+
+                            <a asp-controller="Admin"
+                                   asp-action="GrantPermission"
+                                   asp-route-id="@user.Id"
+                                   style="color:@(user.CanLogin ? "red" : "green"); font-weight:bold;">
+                                @(user.CanLogin ? "🔒 Thu hồi" : "🛡 Cấp quyền")
+                            </a>
+                        </td>
+                    </tr>
+
+                    stt++;
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+<script>
+    let deleteTimer = null;
+
+    // ===== SIGNALR REALTIME =====
+    const connection = new signalR.HubConnectionBuilder()
+    .withUrl("/dashboardHub")
+    .build();
+
+    connection.on("NewUserAdded", function (user) {
+    let total = document.getElementById("totalCount");
+    total.innerText = parseInt(total.innerText) + 1;
+
+    const row = `
+    <tr id="row-${user.id}">
+    <td>*</td>
+    <td>${user.fullName}</td>
+    <td>${user.role}</td>
+    <td><span style="color:green;">Đang hoạt động</span></td>
+    <td>Vừa thêm mới</td>
+    </tr>
+    `;
+
+    document.getElementById("accountTableBody")
+    .insertAdjacentHTML("afterbegin", row);
+    });
+
+    connection.on("UserDeleted", function () {
+    let total = document.getElementById("totalCount");
+    total.innerText = Math.max(0, parseInt(total.innerText) - 1);
+    });
+
+    connection.start()
+    .then(() => console.log("Admin realtime connected"))
+    .catch(err => console.error(err));
+
+    // ===== TÌM KIẾM =====
+    document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("searchInput");
+
+    if (searchInput) {
+    searchInput.addEventListener("keyup", function () {
+    let keyword = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#accountTableBody tr");
+
+    rows.forEach(row => {
+    let text = row.innerText.toLowerCase();
+    row.style.display = text.includes(keyword) ? "" : "none";
+    });
+    });
+    }
+    });
+
+    // ===== XÓA + KHÔI PHỤC =====
+    function deleteWithUndo(id, btn) {
+    const row = btn.closest("tr");
+    row.style.display = "none";
+
+    let oldBox = document.getElementById("undoBox");
+    if (oldBox) oldBox.remove();
+
+    let undoBox = document.createElement("div");
+    undoBox.id = "undoBox";
+
+    undoBox.style.position = "fixed";
+    undoBox.style.bottom = "20px";
+    undoBox.style.right = "20px";
+    undoBox.style.background = "#333";
+    undoBox.style.color = "white";
+    undoBox.style.padding = "15px";
+    undoBox.style.borderRadius = "8px";
+    undoBox.style.zIndex = "9999";
+
+    undoBox.innerHTML = `
+    Đã xóa tài khoản
+    <button onclick="undoDelete()"
+    style="margin-left:10px; color:yellow; border:none; background:none; cursor:pointer;">
+    Khôi phục
+    </button>
+    <span id="countdown">(10)</span>
+    `;
+
+    document.body.appendChild(undoBox);
+
+    let seconds = 10;
+
+    deleteTimer = setInterval(() => {
+    seconds--;
+
+    let countdown = document.getElementById("countdown");
+    if (countdown) {
+    countdown.innerText = "(" + seconds + ")";
+    }
+
+    if (seconds <= 0) {
+    clearInterval(deleteTimer);
+    window.location.href = '/Admin/DeleteUser?id=' + id;
+    }
+    }, 1000);
+    }
+
+    function undoDelete() {
+    clearInterval(deleteTimer);
+
+    let undoBox = document.getElementById("undoBox");
+    if (undoBox) {
+    undoBox.remove();
+    }
+
+    location.reload();
+    }
+</script>

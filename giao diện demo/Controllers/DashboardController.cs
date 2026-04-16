@@ -12,65 +12,80 @@ namespace giao_dien_demo.Controllers
         public IActionResult Index()
         {
             var user = HttpContext.Session.GetString("User");
+            var role = HttpContext.Session.GetString("Role");
 
+            // chưa đăng nhập
             if (string.IsNullOrEmpty(user))
                 return RedirectToAction("Login", "Account");
 
-            // 🔥 LẤY DỮ LIỆU THẬT (GIỮ NGUYÊN)
+            // chỉ HR được vào dashboard này
+            if (role != "HR")
+                return RedirectToAction("Login", "Account");
+
+            // giữ nguyên dữ liệu cũ
             var totalEmployees = EmployeeController.list.Count;
 
-            var workingEmployees = AttendanceController.list
+            // danh sách người nghỉ việc từ LeaveController
+            var resignedNames = LeaveController.list
                 .Select(x => x.EmployeeName)
                 .Distinct()
-                .Count();
+                .ToList();
 
-            var nghỉ = totalEmployees - workingEmployees;
+            // số nghỉ việc
+            var resignedEmployees = resignedNames.Count;
 
-            // truyền qua View
+            // số đang làm = tổng - nghỉ việc
+            var workingEmployees = totalEmployees - resignedEmployees;
+
+            // tránh âm số
+            if (workingEmployees < 0)
+                workingEmployees = 0;
+
+            // truyền qua view
             ViewBag.Total = totalEmployees;
             ViewBag.Working = workingEmployees;
-            ViewBag.Leave = nghỉ;
+            ViewBag.Leave = resignedEmployees;
 
             return View();
         }
 
-        // ================== NEW FEATURE ==================
+        // ================== EMPLOYEE LIST ==================
         public IActionResult EmployeeList(string status)
         {
             var user = HttpContext.Session.GetString("User");
+            var role = HttpContext.Session.GetString("Role");
 
             if (string.IsNullOrEmpty(user))
+                return RedirectToAction("Login", "Account");
+
+            // chỉ HR được xem
+            if (role != "HR")
                 return RedirectToAction("Login", "Account");
 
             var employees = EmployeeController.list;
 
             List<Employee> result = new List<Employee>();
 
+            // lấy danh sách nghỉ việc
+            var resignedNames = LeaveController.list
+                .Select(x => x.EmployeeName)
+                .Distinct()
+                .ToList();
+
             if (status == "working")
             {
-                var workingNames = AttendanceController.list
-                    .Select(x => x.EmployeeName)
-                    .Distinct()
-                    .ToList();
-
                 result = employees
-                    .Where(e => workingNames.Contains(e.Name))
+                    .Where(e => !resignedNames.Contains(e.Name))
                     .ToList();
             }
             else if (status == "quit")
             {
-                var workingNames = AttendanceController.list
-                    .Select(x => x.EmployeeName)
-                    .Distinct()
-                    .ToList();
-
                 result = employees
-                    .Where(e => !workingNames.Contains(e.Name))
+                    .Where(e => resignedNames.Contains(e.Name))
                     .ToList();
             }
             else
             {
-                // all
                 result = employees;
             }
 

@@ -1,50 +1,187 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - giao_diện_demo</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] - HRMS</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/giao_diện_demo.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+    <style>
+        .notification-badge {
+            display: inline-block;
+            min-width: 22px;
+            text-align: center;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            margin-left: 8px;
+            line-height: 18px;
+            vertical-align: middle;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        canvas#signature-pad {
+            position: relative;
+            z-index: 10;
+            touch-action: none;
+        }
+
+        .sidebar .logo-container {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar .logo-container img {
+            max-width: 80%;
+            height: auto;
+            mix-blend-mode: screen; 
+            filter: brightness(1.2);
+        }
+        /* Giữ màu đỏ cho nút đăng xuất để dễ phân biệt */
+        .logout-link { color: #ff4757 !important; font-weight: 500; }
+    </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">giao_diện_demo</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
+
+    @using Microsoft.AspNetCore.Http
+    @{
+        var role = Context.Session.GetString("Role");
+        var currentUser = Context.Session.GetString("User") ?? "";
+        var realName = Context.Session.GetString("RealName") ?? ""; 
+        
+        int soThongBao = 0;
+        if (!string.IsNullOrEmpty(currentUser))
+        {
+            soThongBao = giao_dien_demo.Controllers.NotificationController.list
+                .Count(n => 
+                    !string.IsNullOrEmpty(n.NguoiNhan) && 
+                    (
+                        n.NguoiNhan == "Tất cả nhân viên" || 
+                        n.NguoiNhan.Trim().ToLower() == currentUser.Trim().ToLower() ||
+                        (realName != "" && n.NguoiNhan.Trim().ToLower() == realName.Trim().ToLower())
+                    )
+                );
+        }
+    }
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-container">
+                <a href="/">
+                    <img src="~/images/logo.jpg" alt="HRMS Đức Long" />
+                </a>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
+
+            <ul class="menu">
+                @* ===== MENU ADMIN ===== *@
+                @if (role == "Admin")
+                {
+                    <li><a asp-controller="Admin" asp-action="Index">🏠 Bảng điều khiển</a></li>
+                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ của tôi</a></li>
+                    <li><a asp-controller="Admin" asp-action="Index">👥 Quản lý tài khoản</a></li>
+                    <li><a asp-controller="Admin" asp-action="Index">🛡 Phân quyền</a></li>
+                }
+
+                @* ===== MENU NHÂN VIÊN ===== *@
+                else if (role == "Employee")
+                {
+                    <li><a asp-controller="NhanVien" asp-action="Index">🏠 Trang chủ</a></li>
+                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ của tôi</a></li>
+                    <li><a asp-controller="Attendance" asp-action="Index">⏱ Chấm công</a></li>
+                    <li><a asp-controller="Leave" asp-action="Index">📄 Nghỉ phép</a></li>
+                    <li><a asp-controller="Contract" asp-action="Index">📑 Hợp đồng</a></li>
+                }
+
+                @* ===== MENU HR ===== *@
+                else if (role == "HR")
+                {
+                    <li><a asp-controller="HR" asp-action="Index">🏠 Trang chủ</a></li>
+                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ cá nhân</a></li>
+                    <li><a asp-controller="Employee" asp-action="Index">👥 Quản lý nhân viên</a></li>
+                    <li><a asp-controller="Attendance" asp-action="Index">⏱ Chấm công</a></li>
+                    <li><a asp-controller="Salary" asp-action="Index">💰 Lương</a></li>
+                    <li><a asp-controller="Leave" asp-action="Index">📄 Nghỉ phép</a></li>
+                    <li><a asp-controller="Contract" asp-action="Index">📑 Hợp đồng</a></li>
+                    <li><a asp-controller="Report" asp-action="Index">📊 Báo cáo</a></li>
+                }
+
+                @* ===== MENU LEADER ===== *@
+                else if (role == "Leader")
+                {
+                    <li><a asp-controller="Leader" asp-action="Index">📊 Bảng điều khiển</a></li>
+                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ cá nhân</a></li>
+                    <li><a asp-controller="Report" asp-action="Index">📈 Báo cáo</a></li>
+                    <li><a asp-controller="Report" asp-action="Export">📥 Xuất báo cáo</a></li>
+                }
+
+                @if (!string.IsNullOrEmpty(role))
+                {
+                    <li class="mt-2 border-top pt-2">
+                        <a asp-controller="Notification" asp-action="Index">
+                            🔔 Thông báo <span id="notificationBadge" class="notification-badge">@soThongBao</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Account" asp-action="Logout" class="logout-link">
+                            🚪 Đăng xuất
+                        </a>
+                    </li>
+                }
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="topbar">
+                <h2 class="fw-bold">@ViewData["Title"]</h2>
+            </div>
+
+            <div class="content-area p-4">
+                @RenderBody()
+            </div>
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - giao_diện_demo - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const globalConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/dashboardHub")
+            .withAutomaticReconnect()
+            .build();
+
+        globalConnection.on("ReceiveNotification", function (message) {
+            let badge = document.getElementById("notificationBadge");
+            if (badge) {
+                let currentCount = parseInt(badge.innerText) || 0;
+                badge.innerText = currentCount + 1;
+                badge.style.boxShadow = "0 0 12px #ff4757";
+                badge.style.transform = "scale(1.2)";
+                setTimeout(() => { 
+                    badge.style.boxShadow = "none"; 
+                    badge.style.transform = "scale(1)";
+                }, 1000);
+            }
+        });
+
+        async function startGlobalConnection() {
+            try { await globalConnection.start(); console.log("Global SignalR Connected."); } 
+            catch (err) { setTimeout(startGlobalConnection, 5000); }
+        }
+        startGlobalConnection();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

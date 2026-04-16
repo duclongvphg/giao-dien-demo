@@ -1,0 +1,39 @@
+﻿@model giao_dien_demo.Models.User
+
+@{
+    ViewData["Title"] = "Sửa tài khoản";
+}
+
+<h2>✏ Sửa tài khoản</h2>
+
+<form asp-action="EditUser" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="mb-3">
+        <label>Họ tên</label>
+        <input asp-for="FullName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Tên đăng nhập</label>
+        <input asp-for="Username" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Vai trò</label>
+        <select asp-for="Role" class="form-control">
+            <option>Admin</option>
+            <option>HR</option>
+            <option>Leader</option>
+            <option>Employee</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        💾 Lưu
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        ↩ Quay lại
+    </a>
+</form>

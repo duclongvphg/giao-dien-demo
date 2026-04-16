@@ -1,8 +1,150 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Dashboard HRMS";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    /* Style cho các Card Dashboard */
+    .stat-card {
+        border-radius: 12px;
+        color: white;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        cursor: pointer;
+        height: 100%;
+    }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+    .stat-card h5 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
+    .stat-card h2 { font-size: 2.5rem; font-weight: 700; margin: 0; }
+
+    /* Màu sắc chuẩn theo ảnh của bạn */
+    .bg-nv { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); } /* Nhân viên - Xanh dương */
+    .bg-cc { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); } /* Chấm công - Xanh lá */
+    .bg-luong { background: linear-gradient(135deg, #ee9ae5 0%, #5961f9 100%); } /* Lương - Tím hồng */
+    .bg-nghi { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); } /* Nghỉ phép - Vàng cam */
+    .bg-hd { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); } /* Hợp đồng - Xanh tím */
+    .bg-bc { background: linear-gradient(135deg, #134e5e 0%, #71b280 100%); } /* Báo cáo - Xanh đậm */
+
+    .activity-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .table thead th { background: #1a1a1a; color: white; border: none; font-weight: 500; }
+</style>
+
+<div class="container-fluid py-4" style="background-color: #f8f9fa; min-height: 100vh;">
+    <div class="row g-4 mb-5">
+        <div class="col-md-2 col-sm-4">
+            <div class="stat-card bg-nv">
+                <h5>👥 Nhân viên</h5>
+                <h2 id="employeeCountDisplay">@ViewBag.EmployeeCount</h2>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="stat-card bg-cc">
+                <h5>⏱ Chấm công</h5>
+                <h2>0</h2>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="stat-card bg-luong">
+                <h5>💰 Lương</h5>
+                <h2>0</h2>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="stat-card bg-nghi">
+                <h5>📄 Nghỉ phép</h5>
+                <h2>0</h2>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="stat-card bg-hd">
+                <h5>📜 Hợp đồng</h5>
+                <h2>@ViewBag.ContractCount</h2>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="stat-card bg-bc">
+                <h5>📊 Báo cáo</h5>
+                <h2>0</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="activity-section">
+        <h4 class="mb-4"><i class="fas fa-bell text-warning me-2"></i> Nhật ký hoạt động & Tin nhắn từ các Actor</h4>
+        <div class="table-responsive">
+            <table class="table table-hover border">
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">Thời gian</th>
+                        <th>Nội dung sự kiện / Tin nhắn</th>
+                        <th style="width: 200px;">Phân loại</th>
+                    </tr>
+                </thead>
+                <tbody id="activityLogBody">
+                    <tr>
+                        <td class="text-muted">@DateTime.Now.ToString("HH:mm:ss")</td>
+                        <td><span class="text-success">●</span> Hệ thống quản trị HRMS trực tuyến</td>
+                        <td class="text-muted small">Hệ thống</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // 1. Khởi tạo kết nối SignalR
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dashboardHub")
+            .withAutomaticReconnect()
+            .build();
+
+        // 2. Lắng nghe sự kiện Cập nhật số lượng nhân viên
+        connection.on("UpdateEmployeeCount", function (count) {
+            const display = document.getElementById("employeeCountDisplay");
+            if (display) {
+                // Hiệu ứng đổi màu và nhảy số
+                display.classList.add("text-warning");
+                display.innerText = count;
+                setTimeout(() => { display.classList.remove("text-warning"); }, 2000);
+            }
+        });
+
+        // 3. Lắng nghe thông báo và ghi vào nhật ký
+        connection.on("ReceiveNotification", function (message) {
+            const logBody = document.getElementById("activityLogBody");
+            const now = new Date().toLocaleTimeString('vi-VN');
+            
+            // Chèn dòng mới lên đầu bảng nhật ký
+            const newRow = logBody.insertRow(0);
+            newRow.style.backgroundColor = "#fff9db";
+            newRow.innerHTML = `
+                <td class="text-muted">${now}</td>
+                <td><span class="text-primary">●</span> ${message}</td>
+                <td class="text-muted small">Thông báo</td>
+            `;
+            
+            // Trả lại màu sau 3 giây
+            setTimeout(() => { newRow.style.backgroundColor = ""; }, 3000);
+        });
+
+        // Bắt đầu kết nối
+        async function start() {
+            try {
+                await connection.start();
+                console.log("Dashboard SignalR Connected.");
+            } catch (err) {
+                console.log(err);
+                setTimeout(start, 5000);
+            }
+        };
+
+        start();
+    </script>
+}

@@ -1,0 +1,40 @@
+﻿
+@model giao_dien_demo.Models.User
+
+@{
+    ViewData["Title"] = "Thông tin cá nhân";
+}
+
+<div class="container mt-4">
+    <h2>👤 Thông tin cá nhân</h2>
+    <hr />
+
+    <table class="table table-bordered">
+        <tr>
+            <th>ID</th>
+            <td>@Model.Id</td>
+        </tr>
+
+        <tr>
+            <th>Họ tên</th>
+            <td>@Model.FullName</td>
+        </tr>
+
+        <tr>
+            <th>Vai trò</th>
+            <td>@Model.Role</td>
+        </tr>
+
+        <tr>
+            <th>Trạng thái</th>
+            <td>
+                @(Model.IsOnline ? "Đang hoạt động" : "Ngoại tuyến")
+            </td>
+        </tr>
+    </table>
+
+    <a asp-controller="Admin" asp-action="Index" class="btn btn-secondary">
+        ⬅ Quay lại
+    </a>
+</div>
+

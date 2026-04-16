@@ -1,6 +1,5 @@
 ﻿@model giao_dien_demo.Models.Employee
 
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
@@ -9,7 +8,7 @@
     }
 
     .form-container {
-        width: 400px;
+        width: 500px;
         margin: 50px auto;
         padding: 30px;
         border-radius: 15px;
@@ -25,26 +24,40 @@
 
     label {
         font-weight: bold;
+        display: block;
+        margin-top: 10px;
     }
 
-    input {
+    input, select {
         width: 100%;
         padding: 10px;
-        margin: 8px 0 15px 0;
+        margin: 5px 0 5px 0;
         border-radius: 8px;
         border: 1px solid #ccc;
         transition: 0.3s;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: 15px;
     }
 
-        input:focus {
-            border-color: #4A90E2;
-            box-shadow: 0 0 5px #4A90E2;
-            outline: none;
-        }
+    input:focus, select:focus {
+        border-color: #4A90E2;
+        box-shadow: 0 0 5px #4A90E2;
+        outline: none;
+    }
+        
+    .note-text {
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-bottom: 10px;
+        display: block;
+        font-style: italic;
+    }
 
     .btn-save {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
+        margin-top: 15px;
         border: none;
         border-radius: 8px;
         background: #4A90E2;
@@ -52,12 +65,13 @@
         font-weight: bold;
         cursor: pointer;
         transition: 0.3s;
+        font-size: 16px;
     }
 
-        .btn-save:hover {
-            background: #357ABD;
-            transform: scale(1.05);
-        }
+    .btn-save:hover {
+        background: #357ABD;
+        transform: scale(1.02);
+    }
 
     .back-link {
         display: block;
@@ -67,62 +81,126 @@
         text-decoration: none;
     }
 
-        .back-link:hover {
-            text-decoration: underline;
-        }
+    .back-link:hover {
+        text-decoration: underline;
+    }
 
-    /* 🔥 FIX LỖI RAZOR */
     @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
 <div class="form-container">
-    <h2>✏️ Sửa nhân viên</h2>
+    <h2>✏️ Sửa nhân viên & Phụ cấp</h2>
 
     <form id="editForm" method="post">
         <input type="hidden" name="Id" value="@Model.Id" />
+        <input type="hidden" name="EmployeeCode" value="@Model.EmployeeCode" />
 
-        <label>Tên:</label>
+        <label>Tên nhân viên:</label>
         <input name="Name" value="@Model.Name" required />
 
         <label>Phòng ban:</label>
         <input name="Department" value="@Model.Department" required />
 
-        <label>Chức vụ:</label>
-        <input name="Position" value="@Model.Position" required />
+        <label>Trạng thái hợp đồng:</label>
+        <select name="Position" id="PositionSelect" required>
+            <option value="Chính thức">Chính thức</option>
+            <option value="Thử việc">Thử việc</option>
+            <option value="Thực tập">Thực tập</option>
+            <option value="Thời vụ">Thời vụ</option>
+        </select>
 
-        <label>Lương:</label>
+        <label>Vị trí công việc (Chức vụ):</label>
+        <select name="JobTitle" id="JobTitleSelect" required>
+            <option value="" disabled>-- Chọn chức vụ --</option>
+            
+            <optgroup label="1. Ban Giám đốc">
+                <option value="Giám đốc điều hành (CEO)">Giám đốc điều hành (CEO)</option>
+                <option value="Giám đốc Kỹ thuật (CTO)">Giám đốc Kỹ thuật (CTO)</option>
+                <option value="Giám đốc Nhân sự (CHRO)">Giám đốc Nhân sự (CHRO)</option>
+            </optgroup>
+            
+            <optgroup label="2. Cấp Quản lý">
+                @* 🔥 ĐÃ THÊM: Vị trí Quản trị viên hệ thống *@
+                <option value="Quản trị viên hệ thống (System Admin)">Quản trị viên hệ thống (System Admin)</option>
+                <option value="Quản lý Dự án (PM)">Quản lý Dự án (PM)</option>
+                <option value="Trưởng phòng Kỹ thuật">Trưởng phòng Kỹ thuật</option>
+                <option value="Trưởng phòng Nhân sự (HR)">Trưởng phòng Nhân sự (HR)</option>
+                <option value="Trưởng phòng Kinh doanh (Sales)">Trưởng phòng Kinh doanh (Sales)</option>
+            </optgroup>
+            
+            <optgroup label="3. Cấp Nhân viên">
+                <option value="Lập trình viên (Senior)">Lập trình viên (Senior)</option>
+                <option value="Lập trình viên (Junior/Mid)">Lập trình viên (Junior/Mid)</option>
+                <option value="Phân tích nghiệp vụ (BA)">Phân tích nghiệp vụ (BA)</option>
+                <option value="Kiểm thử phần mềm (Tester/QA)">Kiểm thử phần mềm (Tester/QA)</option>
+            </optgroup>
+            
+            <optgroup label="4. Khối Back-Office">
+                <option value="Chuyên viên Nhân sự">Chuyên viên Nhân sự</option>
+                <option value="Kế toán viên">Kế toán viên</option>
+                <option value="Nhân viên Kinh doanh (Sales)">Nhân viên Kinh doanh (Sales)</option>
+                <option value="Thực tập sinh (Intern)">Thực tập sinh (Intern)</option>
+            </optgroup>
+        </select>
+
+        <hr style="margin: 20px 0; border-top: 1px dashed #ccc;" />
+
+        <label style="color: #e74c3c;">Lương cơ bản (VNĐ):</label>
         <input name="Salary" value="@Model.Salary" required type="number" />
 
-        <button type="submit" class="btn-save">💾 Cập nhật</button>
+        <label style="color: #27ae60;">Phụ cấp chức vụ (VNĐ):</label>
+        <input name="PositionAllowance" value="@Model.PositionAllowance" type="number" />
+        <span class="note-text">VD: Trưởng phòng nhập 3000000</span>
+
+        <label style="color: #27ae60;">Phụ cấp độc hại / Nguy hiểm (VNĐ):</label>
+        <input name="HazardousAllowance" value="@Model.HazardousAllowance" type="number" />
+        <span class="note-text">VD: Mức 1 nhập 1000000</span>
+
+        <label style="color: #27ae60;">Hệ số khu vực (Vùng khó khăn):</label>
+        <input name="RegionalAllowanceSystem" value="@Model.RegionalAllowanceSystem" type="number" step="0.1" min="0" max="1" />
+        <span class="note-text">VD: Nhập 0.1 đến 0.7 (Hệ thống tự nhân với lương CB)</span>
+
+        <button type="submit" class="btn-save">💾 Cập nhật dữ liệu</button>
     </form>
 
-    <a href="/Employee" class="back-link">⬅ Quay lại</a>
+    <a href="@(Context.Request.Query["returnUrl"].ToString() == "" 
+                              ? "/Employee"
+                              : Context.Request.Query["returnUrl"].ToString())"
+           class="back-link">
+        ⬅ Quay lại
+    </a>
 </div>
 
 <script>
+    // 🔥 TỰ ĐỘNG CHỌN ĐÚNG DỮ LIỆU CŨ KHI MỞ FORM
+    document.addEventListener("DOMContentLoaded", function() {
+        let currentPosition = '@Html.Raw(Model.Position)';
+        let currentJobTitle = '@Html.Raw(Model.JobTitle)';
+        
+        if(currentPosition) {
+            document.getElementById('PositionSelect').value = currentPosition;
+        }
+        if(currentJobTitle) {
+            document.getElementById('JobTitleSelect').value = currentJobTitle;
+        }
+    });
+
     document.getElementById("editForm").addEventListener("submit", function (e) {
         e.preventDefault();
 
         Swal.fire({
             title: 'Xác nhận?',
-            text: "Bạn muốn cập nhật thông tin?",
+            text: "Bạn muốn lưu các cập nhật về chức vụ, lương và phụ cấp?",
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Cập nhật',
-            cancelButtonText: 'Hủy'
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#4A90E2'
         }).then((result) => {
             if (result.isConfirmed) {
-                // submit thật
                 e.target.submit();
             }
         });

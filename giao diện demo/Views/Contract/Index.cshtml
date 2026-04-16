@@ -1,0 +1,369 @@
+﻿@model List<giao_dien_demo.Models.Contract>
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Quản lý Hợp đồng";
+    var role = Context.Session.GetString("Role");
+    // 🔥 Lấy danh sách nhân viên để tra cứu mã NV
+    var empList = ViewBag.EmployeeList as List<giao_dien_demo.Models.Employee> ?? new List<giao_dien_demo.Models.Employee>();
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+<style>
+    /* 1. Căn chỉnh bảng danh sách */
+    .table th, .table td { text-align: center; vertical-align: middle !important; }
+    .status-badge { padding: 6px 15px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
+    .bg-waiting-sign { background-color: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
+    .bg-waiting-approve { background-color: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
+    .bg-active { background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+
+    /* 2. STYLE HỢP ĐỒNG */
+    .modal-xl { max-width: 900px; }
+    .contract-paper {
+        background: #fff; padding: 40px 50px; border: 1px solid #dee2e6;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05); font-family: 'Times New Roman', Times, serif;
+        font-size: 16px; line-height: 1.6; color: #212529; height: 450px; 
+        overflow-y: auto; white-space: pre-wrap; text-align: left; margin-bottom: 20px;
+    }
+
+    /* 3. VÙNG KÝ TÊN */
+    .signature-section {
+        background: #f8f9fa; padding: 20px; border-radius: 8px;
+        border: 1px solid #e9ecef; text-align: center;
+    }
+    .signature-input {
+        font-family: 'Dancing Script', cursive; font-size: 30px !important;
+        color: #000080; text-align: center; border: 2px dashed #adb5bd !important;
+        background: #fff !important; height: 70px !important; margin-top: 10px;
+    }
+    .sig-display-text {
+        font-family: 'Dancing Script', cursive; font-size: 28px;
+        color: #000080; border-bottom: 1px solid #333; padding: 0 10px;
+    }
+</style>
+
+<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 1060;"></div>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark">📑 @(role == "HR" ? "Quản lý Hợp đồng Nhân viên" : "Hợp đồng của tôi")</h2>
+        @if (role == "HR") {
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreateContract">
+                <i class="fas fa-plus me-1"></i> Soạn hợp đồng mới
+            </button>
+        }
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 80px;">STT</th> 
+                        <th>Mã NV</th> 
+                        <th>Họ tên Nhân viên</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int stt = 1;
+                        foreach (var item in Model) {
+                            // 🔥 LOGIC DÒ MÃ TỰ ĐỘNG BẰNG TÊN
+                            var emp = empList.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name) && e.Name.Trim().ToLower() == item.EmployeeName.Trim().ToLower());
+                            var empCode = (emp != null && !string.IsNullOrEmpty(emp.EmployeeCode)) ? emp.EmployeeCode : "---";
+
+                            <tr id="row-contract-@item.Id">
+                                <td>#@(stt++)</td>
+                                
+                                <td>
+                                    <span class="badge @(empCode == "---" ? "bg-info" : "bg-secondary")" style="font-size: 13px;">
+                                        @empCode
+                                    </span>
+                                </td>
+
+                                <td class="text-start ps-5"><span class="fw-bold">@item.EmployeeName</span></td>
+                                <td>
+                                    @if (item.Status == "Chờ nhân viên ký") { 
+                                        <span class="status-badge bg-waiting-sign">📝 Chờ ký</span> 
+                                    }
+                                    else if (item.Status == "Đã ký (Chờ duyệt cuối)") {
+                                        <span class="status-badge bg-waiting-approve">⏳ Chờ duyệt</span>
+                                    }
+                                    else { 
+                                        <span class="status-badge bg-active">✅ @item.Status</span> 
+                                    }
+                                </td>
+                                <td>
+                                    <input type="hidden" id="content_@item.Id" value="@item.Content" />
+                                    <input type="hidden" id="hrSig_@item.Id" value="@item.HrSignature" />
+                                    <input type="hidden" id="empSig_@item.Id" value="@item.Signature" />
+
+                                    @if (role == "HR") {
+                                        <button onclick="openViewModal(@item.Id, '@item.Status')" class="btn btn-outline-info btn-sm">Xem chi tiết</button>
+                                        <button onclick="cancelContract(@item.Id)" class="btn btn-outline-danger btn-sm ms-1">Hủy bỏ</button>
+                                    } else if (item.Status == "Chờ nhân viên ký") {
+                                        <button onclick="openSignModal(@item.Id)" class="btn btn-primary btn-sm px-3">✍️ Ký hợp đồng</button>
+                                    } else {
+                                        <button onclick="openViewModal(@item.Id, '@item.Status')" class="btn btn-outline-secondary btn-sm">Xem lại</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="5" class="py-5 text-muted">Hiện tại không có hợp đồng nào trong danh sách.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateContract" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">📝 Soạn thảo Hợp đồng Lao động</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/Contract/Create">
+                <div class="modal-body bg-light">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nhân viên thụ hưởng</label>
+                            <input list="employeeData" name="EmployeeName" class="form-control" placeholder="Gõ tên hoặc chọn nhân viên..." required />
+                            <datalist id="employeeData">
+                                @if (ViewBag.EmployeeList != null)
+                                {
+                                    foreach (var emp in (List<giao_dien_demo.Models.Employee>)ViewBag.EmployeeList)
+                                    {
+                                        <option value="@emp.Name">@emp.Name</option>
+                                    }
+                                }
+                            </datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Ngày ký kết</label>
+                            <input type="date" name="StartDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+                    
+                    <label class="form-label fw-bold text-muted">NỘI DUNG ĐIỀU KHOẢN</label>
+                    <textarea name="Content" class="form-control mb-3" style="height: 300px; font-family: 'Times New Roman'; font-size: 16px;">
+                                        CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                                            Độc lập - Tự do - Hạnh phúc
+                                              -----------------------
+
+HỢP ĐỒNG LAO ĐỘNG
+(Số: ....../2026/HĐLĐ-HRMS)
+
+Hôm nay, ngày ..... tháng ..... năm 2026, tại Văn phòng Công ty TNHH Công Nghệ HRMS. Chúng tôi gồm có:
+
+BÊN A (NGƯỜI SỬ DỤNG LAO ĐỘNG): CÔNG TY TNHH CÔNG NGHỆ HRMS 
+- Đại diện: Ông/Bà ........................................ 
+- Chức vụ: Giám đốc Nhân sự
+- Địa chỉ: Số 1, Đường Công Nghệ, TP. Thái Nguyên
+- Điện thoại: 0208.xxx.xxxx
+
+BÊN B (NGƯỜI LAO ĐỘNG): Ông/Bà ........................................
+- Sinh ngày: ...../...../......... SDT:.........................
+- Quốc tịch: Việt Nam
+- Số CCCD: ........................... Cấp ngày: ...../...../......... Nơi cấp: Cục CSQLHC về TTXH
+- Địa chỉ thường trú: ..........................................................................................
+
+Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam kết thực hiện đúng các điều khoản sau:
+
+ĐIỀU 1: THỜI HẠN VÀ CÔNG VIỆC
+- Loại hợp đồng: Hợp đồng lao động có thời hạn.
+- Chức danh chuyên môn: Theo sự phân công của Trưởng bộ phận.
+- Địa điểm làm việc: Trụ sở chính công ty.
+
+ĐIỀU 2: CHẾ ĐỘ LÀM VIỆC
+- Thời giờ làm việc: 40 giờ/tuần (Từ Thứ 2 đến Thứ 7. Chủ nhật (nếu làm thêm)).
+- Buổi sáng: 07h30 - 11h30 | Buổi chiều: 13h00 - 17h00.
+- Thiết bị làm việc: Được cung cấp máy tính và các công cụ làm việc theo tiêu chuẩn của công ty.
+
+ĐIỀU 3: MỨC LƯƠNG VÀ PHỤ CẤP
+- Mức lương cơ bản: ....................................... VNĐ/tháng.
+- Phụ cấp: Phụ cấp chức vụ, phụ cấp độc hại và hệ số khu vực (nếu có) được áp dụng theo quy chế công ty.
+- Hình thức trả lương: Chuyển khoản vào ngày 05 hàng tháng.
+- Xét duyệt tăng lương: Định kỳ 01 năm/lần dựa trên đánh giá hiệu quả công việc (KPI).
+
+ĐIỀU 4: BẢO HIỂM VÀ PHÚC LỢI KHÁC
+- BHXH, BHYT, BHTN: Được công ty đóng đầy đủ theo quy định của Luật Lao động hiện hành sau khi ký HĐLĐ chính thức.
+- Nghỉ phép năm: 12 ngày phép/năm hưởng nguyên lương.
+- Thưởng: Lương tháng 13, thưởng Lễ/Tết và thưởng hiệu suất dự án theo tình hình kinh doanh của công ty.
+
+ĐIỀU 5: NGHĨA VỤ VÀ QUYỀN LỢI CỦA NGƯỜI LAO ĐỘNG
+- Hoàn thành tốt công việc được giao, tuân thủ tuyệt đối nội quy và quy chế bảo mật thông tin của công ty.
+- Được quyền đề xuất các giải pháp cải tiến công việc và tham gia các khóa đào tạo nâng cao nghiệp vụ do công ty tổ chức.
+
+ĐIỀU 6: ĐIỀU KHOẢN THI HÀNH
+- Hợp đồng này được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.
+- Hợp đồng có hiệu lực kể từ ngày hai bên ký kết. Các vấn đề chưa được ghi rõ trong hợp đồng này sẽ được giải quyết theo Nội quy công ty và Bộ Luật Lao động Việt Nam hiện hành.
+                    </textarea>
+
+                    <div class="signature-section">
+                        <h6 class="text-primary fw-bold mb-1">CHỮ KÝ ĐẠI DIỆN BÊN A (HR)</h6>
+                        <input type="text" name="HrSignature" class="form-control signature-input mx-auto" style="max-width: 450px;" placeholder="Gõ tên bạn tại đây..." required />
+                    </div>
+                </div>
+                <div class="modal-footer bg-white">
+                    <button type="submit" class="btn btn-primary px-4 py-2 fw-bold">Gửi cho Nhân viên</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalSignContract" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">✍️ Ký xác nhận Hợp đồng Điện tử</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/Contract/SubmitSignature">
+                <input type="hidden" id="signContractId" name="Id" />
+                <div class="modal-body" style="background-color: #f0f2f5;">
+                    <div id="signContractContent" class="contract-paper shadow-sm"></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="fw-bold">Thời hạn hợp đồng</label>
+                            <select name="Duration" class="form-select border-primary" required>
+                                <option value="" disabled selected>-- Chọn thời hạn --</option>
+                                <option value="1 tháng">1 tháng (Thử việc / Thời vụ)</option>
+                                <option value="2 tháng">2 tháng (Thử việc)</option>
+                                <option value="3 tháng">3 tháng (Ngắn hạn)</option>
+                                <option value="6 tháng">6 tháng (Ngắn hạn)</option>
+                                <option value="1 năm">1 năm (Tiêu chuẩn)</option>
+                                <option value="2 năm">2 năm</option>
+                                <option value="3 năm">3 năm</option>
+                                <option value="Vô thời hạn">Vô thời hạn</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fw-bold">Ngày bắt đầu hiệu lực</label>
+                            <input type="date" name="ExtensionDate" class="form-control border-primary" required value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-6 border-end">
+                            <h6 class="fw-bold text-muted text-uppercase small">Bên A (Công ty)</h6>
+                            <div class="mt-2"><span id="displayHrSig" class="sig-display-text"></span></div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="fw-bold text-success text-uppercase small">Bên B (Nhân viên ký tên)</h6>
+                            <input type="text" name="Signature" class="form-control signature-input w-100" placeholder="Nhập họ tên của bạn..." required />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white">
+                    <button type="submit" class="btn btn-success px-5 py-2 fw-bold">Hoàn tất & Nộp hợp đồng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const userRole = '@role';
+
+        function openSignModal(id) {
+            document.getElementById('signContractId').value = id;
+            document.getElementById('signContractContent').innerText = document.getElementById('content_' + id).value;
+            document.getElementById('displayHrSig').innerText = document.getElementById('hrSig_' + id).value;
+            new bootstrap.Modal(document.getElementById('modalSignContract')).show();
+        }
+
+        // 🔥 MODAL CHI TIẾT + NÚT DUYỆT CỦA HR
+        function openViewModal(id, status) {
+            const content = document.getElementById('content_' + id).value;
+            const hrSig = document.getElementById('hrSig_' + id).value;
+            const empSig = document.getElementById('empSig_' + id).value;
+
+            // Kiểm tra xem có hiện nút "Duyệt" không (Chỉ HR mới thấy và khi trạng thái là chờ duyệt)
+            const showApproveBtn = (userRole === 'HR' && status === 'Đã ký (Chờ duyệt cuối)');
+
+            Swal.fire({
+                title: '📜 Chi tiết Hợp đồng',
+                html: `
+                    <div style="text-align: left; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 20px; font-family: 'Times New Roman', serif; white-space: pre-wrap; background: #fff;">
+                        ${content}
+                    </div>
+                    <div style="margin-top: 20px; display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 15px;">
+                        <div style="text-align: center;">
+                            <small style="color: gray; font-weight: bold;">Đại diện HR:</small><br/>
+                            <span style="font-family: 'Dancing Script', cursive; font-size: 26px; color: #000080;">${hrSig}</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <small style="color: gray; font-weight: bold;">Nhân viên ký:</small><br/>
+                            <span style="font-family: 'Dancing Script', cursive; font-size: 26px; color: #000080;">${empSig ? empSig : '<i style="font-size:14px; color:red;">Chưa ký</i>'}</span>
+                        </div>
+                    </div>
+                `,
+                width: '850px',
+                showCancelButton: true,
+                cancelButtonText: 'Đóng lại',
+                cancelButtonColor: '#6c757d',
+                showConfirmButton: showApproveBtn,
+                confirmButtonText: '✅ Duyệt hợp đồng',
+                confirmButtonColor: '#28a745',
+                position: 'center'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Nếu HR bấm Duyệt
+                    approveContract(id);
+                }
+            });
+        }
+
+        // 🔥 HÀM GỌI AJAX DUYỆT VÀ ĐẨY SANG NHÂN SỰ
+        function approveContract(id) {
+            Swal.fire({
+                title: 'Đang xử lý...',
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            $.post('/Contract/Approve', { id: id }, function (response) {
+                Swal.fire({
+                    title: 'Thành công!',
+                    text: 'Hợp đồng đã có hiệu lực. Nhân viên đã được thêm vào danh sách chính thức!',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload(); // Load lại để cập nhật bảng
+                });
+            }).fail(function() {
+                Swal.fire('Lỗi', 'Không thể duyệt hợp đồng lúc này.', 'error');
+            });
+        }
+
+        function cancelContract(id) {
+            Swal.fire({
+                title: 'Xác nhận hủy?',
+                text: "Dữ liệu hợp đồng sẽ bị gỡ bỏ vĩnh viễn!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Đồng ý hủy',
+                cancelButtonText: 'Quay lại',
+                position: 'center'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/Contract/Cancel', { id: id }, function () {
+                        $(`#row-contract-${id}`).fadeOut(500, function() { $(this).remove(); });
+                        Swal.fire({ title: 'Đã hủy!', icon: 'success', timer: 1500, showConfirmButton: false });
+                    });
+                }
+            });
+        }
+    </script>
+}

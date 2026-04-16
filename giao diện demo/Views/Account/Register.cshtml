@@ -1,0 +1,72 @@
+﻿@model giao_dien_demo.Models.User
+
+@{
+    ViewData["Title"] = "Tạo tài khoản";
+}
+
+<div class="container mt-4" style="max-width: 500px;">
+    <div class="card shadow-sm border-0 p-4" style="border-radius: 15px;">
+        @* 🔥 ĐÃ ĐỔI: Từ "Đăng ký" thành "Tạo tài khoản" *@
+        <h2 class="text-center fw-bold mb-4" style="color: #333 !important;">📝 Tạo tài khoản</h2>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success text-center mb-3">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        <form asp-controller="Account" asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Họ tên</label>
+                <input asp-for="FullName" class="form-control" placeholder="Nhập họ và tên thật..." required />
+                <span asp-validation-for="FullName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Email</label>
+                <input asp-for="Email" type="email" class="form-control" placeholder="longdz@gmail.com" required />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Tên đăng nhập</label>
+                <input asp-for="Username" class="form-control" placeholder="Nhập tên tài khoản..." required />
+                <span asp-validation-for="Username" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Mật khẩu</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="********" required />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            @* 🔥 ĐÃ ĐỔI: Chữ trên nút bấm *@
+            <button type="submit" class="btn btn-success w-100 fw-bold py-2 mt-2">
+                <i class="fas fa-plus-circle me-1"></i> Tạo tài khoản ngay
+            </button>
+        </form>
+
+        <div class="text-center mt-3 border-top pt-3">
+            @if (ViewBag.Error != null)
+            {
+                <p class="text-danger fw-bold small">⚠️ @ViewBag.Error</p>
+            }
+            
+            <a asp-controller="Account" asp-action="Login" class="text-decoration-none">
+                <i class="fas fa-sign-in-alt me-1"></i> Đã có tài khoản? Đăng nhập
+            </a>
+            <br />
+            <a asp-controller="Admin" asp-action="Index" class="text-muted small">
+                Quay về trang chủ
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

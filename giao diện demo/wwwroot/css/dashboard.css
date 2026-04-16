@@ -1,139 +1,155 @@
-﻿body {
-    margin: 0;
-    font-family: Segoe UI;
-}
-
-/* Layout */
-.container {
-    display: flex;
-}
-
-/* Sidebar */
-.sidebar {
-    width: 220px;
-    height: 100vh;
-    background: #2C3E50;
-    color: white;
-    padding: 20px;
-}
-
-    .sidebar h2 {
-        margin-bottom: 20px;
-    }
-
-    .sidebar ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    .sidebar li {
-        margin: 15px 0;
-        cursor: pointer;
-    }
-
-/* Main */
-.main {
-    flex: 1;
-    padding: 20px;
-}
-
-/* Topbar */
-.topbar {
-    margin-bottom: 20px;
-}
-
-/* Cards */
-.cards {
-    display: flex;
-    gap: 20px;
-}
-
-.card {
-    background: #4A90E2;
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    flex: 1;
-    text-align: center;
-    font-size: 18px;
-}
-.sidebar a {
-    color: white;
-    text-decoration: none;
-    display: block;
-    padding: 8px 0;
-}
-
-    .sidebar a:hover {
-        background: #1abc9c;
-        border-radius: 5px;
-        padding-left: 10px;
-    }
+﻿/* RESET */
 body {
     margin: 0;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
+    background: #f8fafc;
 }
 
-.container {
+/* LAYOUT CHÍNH */
+.app-container {
     display: flex;
+    min-height: 100vh;
+    background: #f8fafc;
 }
 
-/* Sidebar */
+/* SIDEBAR */
 .sidebar {
-    width: 220px;
-    height: 100vh;
-    background: #2c3e50;
+    width: 240px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0F172A, #1E293B);
     color: white;
     padding: 20px;
+    box-sizing: border-box;
+    border-radius: 0 20px 20px 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-    .sidebar h2 {
-        text-align: center;
+.logo {
+    font-size: 30px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* MENU */
+.menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .menu li {
+        margin: 15px 0;
     }
 
-    .sidebar ul {
-        list-style: none;
-        padding: 0;
-    }
-
-        .sidebar ul li {
-            margin: 15px 0;
-        }
-
-    .sidebar a {
+    .menu a {
         color: white;
         text-decoration: none;
-        padding: 10px;
+        padding: 12px 15px;
         display: block;
-        border-radius: 6px;
+        border-radius: 10px;
+        transition: 0.3s;
+        font-size: 17px;
     }
 
-        .sidebar a:hover {
-            background: #1abc9c;
+        .menu a:hover {
+            background: rgba(255,255,255,0.12);
+            padding-left: 20px;
         }
 
-/* Main */
-.main {
+/* MAIN CONTENT */
+.main-content {
     flex: 1;
-    padding: 20px;
+    padding: 25px;
 }
 
+/* TOPBAR */
 .topbar {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
-/* Cards */
-.cards {
+    .topbar h2 {
+        font-size: 38px;
+        font-weight: bold;
+        color: #1e293b;
+    }
+
+/* BODY CONTENT */
+.content-area {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    min-height: 85vh;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* DASHBOARD CARDS */
+.dashboard-cards {
     display: flex;
     gap: 20px;
+    flex-wrap: wrap;
 }
 
 .card {
-    background: #3498db;
+    flex: 1;
+    min-width: 220px;
     color: white;
-    padding: 20px;
-    border-radius: 10px;
-    width: 200px;
-    text-align: center;
+    padding: 25px;
+    border-radius: 18px;
+    font-size: 20px;
     font-weight: bold;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    transition: 0.3s;
+}
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+/* MÀU CARD */
+.blue {
+    background: linear-gradient(135deg, #06B6D4, #3B82F6);
+}
+
+.green {
+    background: linear-gradient(135deg, #22C55E, #84CC16);
+}
+
+.red {
+    background: linear-gradient(135deg, #F43F5E, #EF4444);
+}
+
+.purple {
+    background: linear-gradient(135deg, #8B5CF6, #6366F1);
+}
+.card-link {
+    flex: 1;
+    min-width: 250px;
+    text-decoration: none;
+    color: white;
+}
+
+.number {
+    font-size: 38px;
+    margin-top: 15px;
+    font-weight: bold;
+}
+.orange {
+    background: linear-gradient(135deg, #F59E0B, #F97316);
+}
+
+.teal {
+    background: linear-gradient(135deg, #14B8A6, #06B6D4);
+}
+.purple {
+    background: linear-gradient(135deg, #7C3AED, #6366F1);
+}
+.orange {
+    background: linear-gradient(135deg, #F59E0B, #F97316);
+}
+.number {
+    font-size: 32px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: white;
 }

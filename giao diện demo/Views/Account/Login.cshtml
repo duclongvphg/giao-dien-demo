@@ -1,96 +1,215 @@
 ﻿@{
     Layout = null;
 }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - HRMS</title>
 
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Segoe UI', sans-serif;
-    }
-
-    body {
-        height: 100vh;
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .login-box {
-        width: 350px;
-        padding: 30px;
-        border-radius: 15px;
-        background: rgba(255,255,255,0.15);
-        backdrop-filter: blur(15px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        text-align: center;
-    }
-
-    h2 {
-        margin-bottom: 20px;
-        color: white;
-    }
-
-    .input-box {
-        margin-bottom: 20px;
-    }
-
-        .input-box input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: none;
-            outline: none;
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-            .input-box input::placeholder {
-                color: #eee;
+    <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
 
-    .btn-login {
-        width: 100%;
-        padding: 10px;
-        border: none;
-        border-radius: 8px;
-        background: linear-gradient(45deg, #4facfe, #00f2fe);
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-    }
+            body {
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+                overflow: hidden;
+                background: #0f172a;
+            }
 
-        .btn-login:hover {
-            transform: scale(1.05);
+                body::before {
+                    content: "";
+                    position: absolute;
+                    top: -10px;
+                    left: -10px;
+                    right: -10px;
+                    bottom: -10px;
+                    background-image: url('/images/bg.jpg');
+                    background-size: cover;
+                    background-position: center;
+                    filter: blur(10px);
+                    background-color: rgba(0, 0, 0, 0.55);
+                    background-blend-mode: darken;
+                    z-index: -1;
+                }
+
+            .login-box {
+                width: 400px;
+                background: rgba(255, 255, 255, 0.92);
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+                position: relative;
+                z-index: 1;
+                backdrop-filter: blur(5px);
+            }
+
+            /* 🔥 Đã chỉnh sửa CSS cho Logo */
+            .login-title {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+        
+                .login-title img {
+                    max-width: 65%; /* Thu nhỏ kích thước logo cho vừa hộp đăng nhập */
+                    height: auto;
+                    border-radius: 12px; /* Bo góc mượt mà cho nền đen của logo */
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Đổ bóng nổi bật */
+                }
+
+            .input-box {
+                margin-bottom: 20px;
+            }
+
+                .input-box input {
+                    width: 100%;
+                    padding: 14px;
+                    border-radius: 12px;
+                    border: 1px solid #cbd5e1;
+                    outline: none;
+                    background: #f8fafc;
+                    font-size: 15px;
+                    transition: 0.3s;
+                }
+
+                    .input-box input:focus {
+                        border-color: #2563eb;
+                        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+                    }
+
+            .remember-box {
+                display: flex;
+                align-items: center;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #475569;
+            }
+
+                .remember-box input[type="checkbox"] {
+                    margin-right: 8px;
+                    width: 16px;
+                    height: 16px;
+                    cursor: pointer;
+                    accent-color: #2563eb;
+                }
+
+                .remember-box label {
+                    cursor: pointer;
+                    user-select: none;
+                }
+
+            .btn-login {
+                width: 100%;
+                padding: 14px;
+                border: none;
+                border-radius: 12px;
+                color: white;
+                font-weight: bold;
+                cursor: pointer;
+                display: block;
+                text-decoration: none;
+                text-align: center;
+                margin-top: 5px;
+                transition: 0.3s;
+                background: #2563eb;
+                font-size: 16px;
+            }
+
+                .btn-login:hover {
+                    background: #1d4ed8;
+                    transform: translateY(-1px);
+                }
+
+            .error {
+                color: #dc2626;
+                margin-bottom: 12px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .forgot-link {
+                display: block;
+                text-align: center;
+                margin-top: 20px;
+                color: #2563eb;
+                text-decoration: none;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+                .forgot-link:hover {
+                    text-decoration: underline;
+                }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <div class="login-title">
+            <img src="~/images/logo.jpg" alt="HRMS Logo" />
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="error">@ViewBag.Error</div>
         }
 
-    .error {
-        color: #ffdddd;
-        margin-bottom: 10px;
-    }
-</style>
+        <form method="post" action="/Account/Login" onsubmit="return validateForm()">
+            <div class="input-box">
+                <input type="text" id="username" name="username" placeholder="Tài khoản" autocomplete="off" value="@ViewBag.SavedUsername" />
+            </div>
 
-<div class="login-box">
-    <h2>🚀 HR Management</h2>
+            <div class="input-box" style="margin-bottom: 15px;">
+                <input type="password" id="password" name="password" placeholder="Mật khẩu" />
+            </div>
 
-    <!-- hiển thị lỗi -->
-    @if (ViewBag.Error != null)
-    {
-        <div class="error">@ViewBag.Error</div>
-    }
+            <div class="remember-box">
+                <input type="checkbox" id="rememberMe" name="rememberMe" value="true" @(ViewBag.SavedUsername != null ? "checked" : "")>
+                <label for="rememberMe">Lưu thông tin đăng nhập</label>
+            </div>
 
-    <!-- 🔥 FORM CHUẨN -->
-    <form method="post" action="/Account/Login">
-        <div class="input-box">
-            <input type="text" name="username" placeholder="Tài khoản" required />
-        </div>
+            <div id="errorMessage" class="error"></div>
 
-        <div class="input-box">
-            <input type="password" name="password" placeholder="Mật khẩu" required />
-        </div>
+            <button type="submit" class="btn-login">
+                Đăng nhập
+            </button>
+        </form>
 
-        <button type="submit" class="btn-login">Đăng nhập</button>
-    </form>
-</div>
+        <a href="/Account/ForgotPassword" class="forgot-link">
+            Bạn quên mật khẩu?
+        </a>
+    </div>
+
+    <script>
+            function validateForm() {
+                let username = document.getElementById("username").value.trim();
+                let password = document.getElementById("password").value.trim();
+                let error = document.getElementById("errorMessage");
+
+                error.innerHTML = "";
+
+                if (username === "") {
+                    error.innerHTML = "Vui lòng nhập tài khoản";
+                    return false;
+                }
+
+                if (password === "") {
+                    error.innerHTML = "Vui lòng nhập mật khẩu";
+                    return false;
+                }
+
+                return true;
+            }
+    </script>
+</body>
+</html>

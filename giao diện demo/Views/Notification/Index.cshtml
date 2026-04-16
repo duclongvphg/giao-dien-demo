@@ -1,0 +1,232 @@
+﻿@model List<giao_dien_demo.Controllers.ThongBaoTam>
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Quản lý Thông báo";
+    var role = Context.Session.GetString("Role");
+    var currentUser = Context.Session.GetString("User");
+
+    // 1. Lấy danh sách nhân viên CHÍNH THỨC từ ViewBag (đã đồng bộ từ Controller)
+    var officialEmployees = ViewBag.Employees as List<giao_dien_demo.Models.Employee> ?? new List<giao_dien_demo.Models.Employee>();
+
+    // 2. DIỆT GẠCH ĐỎ: Chuẩn bị dữ liệu JSON sạch cho Javascript
+    var listData = new List<object>();
+    if (Model != null)
+    {
+        foreach (var x in Model)
+        {
+            listData.Add(new {
+                id = x.Id,
+                content = x.NoiDung ?? "",
+                sender = x.NguoiGui ?? "",
+                receiver = x.NguoiNhan ?? "",
+                time = x.NgayTao.ToString("HH:mm")
+            });
+        }
+    }
+    var jsonNotifications = Json.Serialize(listData);
+}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    .notification-card { border-radius: 12px; transition: all 0.3s; border-left: 6px solid #dee2e6; }
+    .card-all { border-left-color: #2196F3 !important; } /* Gửi tất cả - Xanh dương */
+    .card-management { border-left-color: #f44336 !important; } /* Gửi quản lý - Đỏ */
+    .card-private { border-left-color: #9c27b0 !important; } /* Gửi cá nhân - Tím */
+    .card-system { border-left-color: #ff9800 !important; background-color: #fff9f1; } /* Hệ thống - Cam */
+    
+    .sender-badge { font-size: 11px; background: #e9ecef; color: #495057; padding: 2px 8px; border-radius: 10px; }
+    .receiver-badge { font-size: 11px; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; }
+    .notification-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    /* Fix Select2 Height */
+    .select2-container--default .select2-selection--single { height: 38px !important; border: 1px solid #dee2e6 !important; border-radius: 8px !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 35px !important; }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">📢 Thông báo hệ thống</h2>
+        <span class="badge bg-danger p-2" id="liveStatus">Đang kết nối Real-time...</span>
+    </div>
+
+    @* --- PHẦN 1: FORM GỬI THÔNG BÁO (CHỈ HIỆN VỚI QUẢN LÝ) --- *@
+    @if (role == "HR" || role == "Admin" || role == "Leader")
+    {
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">👤 Gửi tới đối tượng</label>
+                        <select id="receiverSelect" class="form-select">
+                            <optgroup label="Gửi chung">
+                                <option value="Tất cả">📢 Gửi cho tất cả nhân viên</option>
+                            </optgroup>
+                            <optgroup label="Gửi Ban quản trị">
+                                <option value="HR">📩 Gửi cho Nhân sự (HR)</option>
+                                <option value="Admin">⚙️ Gửi cho Admin hệ thống</option>
+                                <option value="Ban lãnh đạo">🏛️ Gửi cho Ban lãnh đạo</option>
+                            </optgroup>
+                            <optgroup label="Gửi đích danh nhân viên (Chính thức)">
+                                @foreach (var emp in officialEmployees) {
+                                    <option value="@emp.Name">👤 @emp.Name</option>
+                                }
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">📝 Nội dung thông báo</label>
+                        <input type="text" id="notificationInput" class="form-control" 
+                               placeholder="Nhập tin nhắn cần phát đi..." style="border-radius: 8px; height: 38px;" />
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100 fw-bold" style="border-radius: 8px; height: 38px;" onclick="sendNotification()">
+                            🚀 Gửi đi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* --- PHẦN 2: DANH SÁCH THÔNG BÁO --- *@
+    <div id="notificationList"></div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        const userRole = "@role";
+        const currentUserName = "@currentUser";
+        let notifications = @Html.Raw(jsonNotifications);
+
+        $(document).ready(function() {
+            if ($('#receiverSelect').length > 0) {
+                $('#receiverSelect').select2({ width: '100%' });
+            }
+            renderNotifications();
+        });
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dashboardHub")
+            .withAutomaticReconnect()
+            .build();
+
+        // HÀM VẼ DANH SÁCH THÔNG BÁO
+        function renderNotifications() {
+            const list = document.getElementById("notificationList");
+            if (!list) return;
+
+            if (notifications.length === 0) {
+                list.innerHTML = `<div class="alert alert-info text-center shadow-sm">Chưa có thông báo nào dành cho bạn.</div>`;
+                return;
+            }
+
+            list.innerHTML = notifications.map((item, index) => {
+                let cardClass = "card-private";
+                let icon = "📩";
+
+                if (item.sender === "Hệ thống") { cardClass = "card-system"; icon = "⚠️"; }
+                else if (item.receiver === "Tất cả") { cardClass = "card-all"; icon = "📢"; }
+                else if (["HR", "Admin", "Ban lãnh đạo"].includes(item.receiver)) { cardClass = "card-management"; icon = "🏛️"; }
+
+                // Chỉ Quản lý mới thấy nút Xóa/Thu hồi
+                let actionButtons = "";
+                if (userRole === "HR" || userRole === "Admin" || userRole === "Leader") {
+                    actionButtons = `
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-danger me-2" onclick="deleteRemote(${item.id}, ${index})">🗑 Xóa</button>
+                        <button class="btn btn-sm btn-warning" onclick="recallNotification(${index})">🔄 Thu hồi</button>
+                    </div>`;
+                }
+
+                return `
+                <div class="card shadow-sm border-0 mb-3 notification-card ${cardClass}" style="animation: slideIn 0.4s ease-out;">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <span class="me-3" style="font-size: 24px;">${icon}</span>
+                            <div>
+                                <div class="mb-1">
+                                    <span class="sender-badge">Từ: <b>${item.sender}</b></span>
+                                    <span class="receiver-badge">Đến: <b>${item.receiver}</b></span>
+                                    <small class="text-muted ms-2">${item.time}</small>
+                                </div>
+                                <div class="fw-bold" style="font-size: 16px; color: #2c3e50;">${item.content}</div>
+                            </div>
+                        </div>
+                        ${actionButtons}
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        // --- XỬ LÝ SIGNALR ---
+        connection.on("ReceiveNotification", function (data) {
+            // Logic lọc hiển thị Real-time cho nhân viên
+            if (data.receiver === "Tất cả" || data.receiver === currentUserName || userRole !== "Employee") {
+                notifications.unshift(data);
+                renderNotifications();
+                
+                // Hiện Toast thông báo
+                Swal.fire({
+                    toast: true, position: 'top-end', 
+                    icon: data.sender === 'Hệ thống' ? 'warning' : 'info',
+                    title: data.content, showConfirmButton: false, timer: 4000
+                });
+            }
+        });
+
+        connection.on("NotificationRecalled", function (content) {
+            notifications = notifications.filter(x => x.content !== content);
+            renderNotifications();
+        });
+
+        // --- CÁC HÀM GỬI/XÓA (CHỈ DÀNH CHO QUẢN LÝ) ---
+        function sendNotification() {
+            const input = document.getElementById("notificationInput");
+            const receiver = $('#receiverSelect').val(); 
+            const content = input.value.trim();
+            if (!content) return;
+
+            $.post('/Notification/GuiThongBao', { noiDung: content, nguoiNhan: receiver }, function() {
+                input.value = "";
+                Swal.fire({ icon: 'success', title: 'Đã phát đi!', timer: 1000, showConfirmButton: false });
+            });
+        }
+
+        function recallNotification(index) {
+            const content = notifications[index].content;
+            Swal.fire({
+                title: 'Thu hồi?', text: "Tin nhắn sẽ biến mất ở mọi máy khách!",
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Đồng ý'
+            }).then((result) => {
+                if (result.isConfirmed) $.post('/Notification/RecallByName', { noiDung: content });
+            });
+        }
+
+        function deleteRemote(id, index) {
+            $.post('/Notification/Delete', { id: id }, function() {
+                notifications.splice(index, 1);
+                renderNotifications();
+            });
+        }
+
+        async function startConnection() {
+            try { 
+                await connection.start(); 
+                document.getElementById("liveStatus").innerText = "● Trực tuyến";
+                document.getElementById("liveStatus").className = "badge bg-success p-2";
+            } catch (err) { setTimeout(startConnection, 5000); }
+        }
+
+        startConnection();
+    </script>
+    
+    <style>
+        @@keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+}

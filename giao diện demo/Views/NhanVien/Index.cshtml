@@ -1,0 +1,158 @@
+﻿@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "👨‍💼 Trang chủ nhân viên";
+    var currentUser = Context.Session.GetString("User") ?? "";
+    var myRealName = Context.Session.GetString("RealName") ?? ""; 
+
+    // Lấy danh sách chấm công từ ViewBag (đã được Controller lọc chuẩn)
+    var myAtts = ViewBag.MyAttendances as List<giao_dien_demo.Models.Attendance> ?? new List<giao_dien_demo.Models.Attendance>();
+    var latestAtt = myAtts.OrderByDescending(x => x.CheckIn).FirstOrDefault();
+
+    // Sử dụng trực tiếp con số từ Controller (Đọc từ Database SQL cho chính xác)
+    int contractCount = ViewBag.MyContractCount ?? 0;
+    int leaveCount = ViewBag.MyLeaveCount ?? 0;
+    int notiCount = ViewBag.NotificationCount ?? 0;
+}
+
+<style>
+    .new-row { animation: highlight 2s ease-out; }
+    @@keyframes highlight { from { background-color: #fff9c4; } to { background-color: transparent; } }
+    .card-link { cursor: pointer; text-decoration: none !important; color: inherit !important; }
+    .dashboard-cards .card { transition: transform 0.2s; position: relative; }
+    .dashboard-cards .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+</style>
+
+<h2 class="fw-bold text-dark mb-4"><i class="fas fa-chart-line me-2"></i> Nhân viên: @myRealName</h2>
+
+<div class="dashboard-cards">
+    <div class="card-link">
+        <div class="card blue">
+            ⏱ Giờ Check-in 
+            <div class="number" id="checkInTime">@(latestAtt != null ? latestAtt.CheckIn.ToString("HH:mm") : "--:--")</div>
+        </div>
+    </div>
+    <div class="card-link">
+        <div class="card green">
+            ⏳ Giờ Check-out 
+            <div class="number" id="checkOutTime">@(latestAtt?.CheckOut != null ? latestAtt.CheckOut.Value.ToString("HH:mm") : "--:--")</div>
+        </div>
+    </div>
+    <div class="card-link">
+        <div class="card orange">
+            📋 Tổng công tháng 
+            <div class="number" id="attendanceCount">@(ViewBag.MyAttendanceCount ?? 0)</div>
+        </div>
+    </div>
+    
+    <a href="/Leave/Index" class="card-link">
+        <div class="card red">
+            📄 Đơn nghỉ phép 
+            <div class="number" id="myLeaveCount">@leaveCount</div>
+        </div>
+    </a>
+
+    <a href="/Contract/Index" class="card-link">
+        <div class="card purple">
+            📑 Hợp đồng 
+            <div class="number" id="myContractCount">@contractCount</div>
+        </div>
+    </a>
+
+    <div class="card-link">
+        <div class="card purple">
+            🔔 Thông báo mới 
+            <div class="number" id="myNotificationCount">@notiCount</div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h3 class="fw-bold mb-3">📋 Nhật ký chấm công</h3>
+    <table class="table table-bordered table-hover shadow-sm bg-white">
+        <thead class="table-primary text-center">
+            <tr><th>Ngày</th><th>Check-in</th><th>Check-out</th><th>Trạng thái</th></tr>
+        </thead>
+        <tbody id="attendanceTableBody" class="text-center">
+            @if (myAtts.Any()) {
+                foreach (var item in myAtts.OrderByDescending(x => x.CheckIn)) {
+                    <tr>
+                        <td>@item.CheckIn.ToString("dd/MM/yyyy")</td>
+                        <td><strong>@item.CheckIn.ToString("HH:mm:ss")</strong></td>
+                        <td>@(item.CheckOut.HasValue ? item.CheckOut.Value.ToString("HH:mm:ss") : "--:--")</td>
+                        <td><span class="badge @(item.CheckOut == null ? "bg-warning text-dark" : "bg-success")">@(item.CheckOut == null ? "Đang làm việc" : "Hoàn thành")</span></td>
+                    </tr>
+                }
+            } else {
+                <tr><td colspan="4" class="py-4 text-muted">Chưa có dữ liệu chấm công.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/dashboardHub")
+            .withAutomaticReconnect()
+            .build();
+
+        const loggedInUser = '@currentUser';
+        const myRealName = '@myRealName';
+
+        // 1. Nhận thông báo Real-time
+        connection.on("ReceiveNotification", function (data) {
+            if (data.receiver === "Tất cả nhân viên" || data.receiver === "Tất cả" || data.receiver === loggedInUser || data.receiver === myRealName) {
+                const cardNum = document.getElementById("myNotificationCount");
+                if (cardNum) {
+                    let count = parseInt(cardNum.innerText) || 0;
+                    cardNum.innerText = count + 1;
+                }
+            }
+        });
+
+        // 2. Nhận tín hiệu duyệt Hợp đồng Real-time
+        connection.on("ContractApproved", function (employeeName) {
+            if (employeeName === myRealName || employeeName === loggedInUser) {
+                const contractElement = document.getElementById("myContractCount");
+                if (contractElement) {
+                    let currentCount = parseInt(contractElement.innerText) || 0;
+                    contractElement.innerText = currentCount + 1;
+                    
+                    Swal.fire({
+                        title: 'Chúc mừng!',
+                        text: 'Hợp đồng của bạn đã được phê duyệt!',
+                        icon: 'success',
+                        confirmButtonText: 'Xem ngay'
+                    }).then(() => {
+                        window.location.href = '/Contract/Index';
+                    });
+                }
+            }
+        });
+
+        // 3. Cập nhật Chấm công Real-time
+        connection.on("UpdateAttendanceCount", (totalCount, name) => {
+            if (name === loggedInUser || name === myRealName) {
+                const attCount = document.getElementById("attendanceCount");
+                if(attCount) attCount.innerText = totalCount;
+                
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });
+                const checkInEl = document.getElementById("checkInTime");
+                if(checkInEl) checkInEl.innerText = timeStr;
+            }
+        });
+
+        async function startConnection() {
+            try { 
+                await connection.start(); 
+                console.log("Realtime Connected for: " + myRealName); 
+            } catch (err) { 
+                setTimeout(startConnection, 5000); 
+            }
+        }
+        startConnection();
+    </script>
+}

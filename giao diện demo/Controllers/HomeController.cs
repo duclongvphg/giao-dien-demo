@@ -1,13 +1,37 @@
+using giao_dien_demo.Data;
+using giao_dien_demo.Data;
 using giao_diện_demo.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // Để dùng hàm CountAsync
 using System.Diagnostics;
+using System.Threading.Tasks;
 
-namespace giao_diện_demo.Controllers
+namespace giao_dien_demo.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly ApplicationDbContext _context;
+
+        // Tiêm Database Context vào qua Constructor
+        public HomeController(ApplicationDbContext context)
         {
+            _context = context;
+        }
+
+        // --- CẬP NHẬT TRANG CHỦ DASHBOARD ---
+        public async Task<IActionResult> Index()
+        {
+            // 1. Đếm số nhân viên đã duyệt (Chính thức)
+            ViewBag.EmployeeCount = await _context.Employees.CountAsync(e => e.Position == "Chính thức");
+
+            // 2. Đếm tổng số hợp đồng hiện có
+            ViewBag.ContractCount = await _context.Contracts.CountAsync();
+
+            // 3. Đếm số lượng báo cáo (Nếu bạn có bảng Reports)
+            // ViewBag.ReportCount = await _context.Reports.CountAsync();
+
+            // Mẹo: Bạn có thể thêm các ViewBag khác cho Chấm công, Lương... tương tự
+
             return View();
         }
 

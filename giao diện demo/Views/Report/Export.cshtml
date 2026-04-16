@@ -1,0 +1,191 @@
+﻿@model IEnumerable<giao_dien_demo.Models.Report>
+@{
+    ViewData["Title"] = "Xem trước Báo cáo";
+    
+    // 🔥 Lấy danh sách File đính kèm từ Controller truyền sang
+    var uploadedFiles = ViewBag.UploadedFiles as List<giao_dien_demo.Models.ReportFile> ?? new List<giao_dien_demo.Models.ReportFile>();
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-print-none d-flex justify-content-between align-items-center mb-4">
+        <h3>📑 Xem trước nội dung Báo cáo</h3>
+        <div>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+            <button onclick="window.print()" class="btn btn-primary shadow">
+                <i class="fas fa-file-pdf"></i> Chốt & Xuất PDF gửi HR
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 d-print-none mx-auto" style="max-width: 900px;">
+        <div class="card-body bg-light rounded">
+            <label class="fw-bold mb-2 text-primary">📂 Chọn báo cáo đính kèm từ HR để xem nội dung:</label>
+            <select id="fileSelector" class="form-select form-select-lg border-primary shadow-sm" onchange="loadDocument()">
+                <option value="">-- Mặc định: Xem bảng tổng kết KPI Nhân sự --</option>
+                @foreach (var file in uploadedFiles)
+                {
+                    <option value="@file.FilePath" data-ext="@System.IO.Path.GetExtension(file.FileName).ToLower()">
+                        [@file.Category] @file.Title - Người gửi: @file.UploadedBy (@file.UploadedDate.ToString("dd/MM/yyyy HH:mm"))
+                    </option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="card shadow-lg mx-auto print-paper" style="max-width: 900px; padding: 50px; border-radius: 0; min-height: 1122px;">
+        
+        <div class="row text-center mb-4 text-dark">
+            <div class="col-5">
+                <h6 class="fw-bold">CÔNG TY TNHH HRMS DEMO</h6>
+                <p style="border-top: 1px solid black; display: inline-block; padding-top: 5px;">Số: 01/BC-NS</p>
+            </div>
+            <div class="col-7">
+                <h6 class="fw-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h6>
+                <h6 class="fw-bold text-decoration-underline">Độc lập - Tự do - Hạnh phúc</h6>
+                <p class="mt-2 text-end fst-italic">Hà Nội, ngày @DateTime.Now.ToString("dd") tháng @DateTime.Now.ToString("MM") năm @DateTime.Now.ToString("yyyy")</p>
+            </div>
+        </div>
+
+        <h3 class="text-center fw-bold mt-3 mb-4 text-dark" id="reportDocTitle">BÁO CÁO TỔNG KẾT NHÂN SỰ & CHẤM CÔNG</h3>
+        
+        <div id="documentContent">
+            <div class="mb-4 text-dark">
+                <p><strong>Người xuất báo cáo:</strong> Ban Lãnh Đạo (Leader)</p>
+                <p><strong>Kính gửi:</strong> Bộ phận Hành chính Nhân sự (HR)</p>
+                <p><strong>Nội dung:</strong> Dưới đây là danh sách chi tiết số liệu báo cáo nhân sự đang được ghi nhận trên hệ thống để bộ phận HR nắm bắt và đồng bộ xử lý.</p>
+            </div>
+
+            <table class="table table-bordered border-dark text-dark text-center align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Họ và Tên</th>
+                        <th>Khen thưởng</th>
+                        <th>Kỷ luật</th>
+                        <th>Nghỉ phép</th>
+                        <th>Tình trạng nhiệm vụ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Id</td>
+                                <td class="text-start"><strong>@item.EmployeeName</strong></td>
+                                <td>@item.Reward</td>
+                                <td>@item.Discipline</td>
+                                <td>@item.LeaveDays ngày</td>
+                                <td>@item.TaskStatus</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4"><i>Chưa có dữ liệu nhân sự nào được ghi nhận.</i></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-5 text-center text-dark" style="page-break-inside: avoid;">
+            <div class="col-6">
+                <p class="fw-bold mb-0">Bộ phận HR tiếp nhận</p>
+                <p><i>(Ký và ghi rõ họ tên)</i></p>
+                <br /><br /><br />
+            </div>
+            <div class="col-6">
+                <p class="fw-bold mb-0">Lãnh đạo phê duyệt</p>
+                <p><i>(Ký và ghi rõ họ tên)</i></p>
+                <br /><br /><br />
+                <p class="fw-bold">Vũ Đức Đạt</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f4f6f9; }
+    
+    /* Căn chỉnh lại CSS cho nội dung Word khi render ra Web */
+    #documentContent h1, #documentContent h2 { font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 15px; color: #000; }
+    #documentContent table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid black; }
+    #documentContent th, #documentContent td { border: 1px solid black; padding: 8px; }
+
+    @@media print {
+        /* Ẩn mọi thứ ngoài lề */
+        body * { visibility: hidden; }
+        /* Chỉ hiện phần giấy trắng A4 */
+        .print-paper, .print-paper * { visibility: visible; }
+        /* Căn giấy full trang in */
+        .print-paper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+
+    <script>
+        // Lưu lại đoạn HTML gốc (Bảng KPI) để khôi phục khi Lãnh đạo chọn "Mặc định"
+        const originalContent = document.getElementById("documentContent").innerHTML;
+
+        function loadDocument() {
+            const selector = document.getElementById("fileSelector");
+            const filePath = selector.value;
+            const ext = selector.options[selector.selectedIndex].getAttribute("data-ext");
+            const container = document.getElementById("documentContent");
+            const titleEl = document.getElementById("reportDocTitle");
+
+            if (!filePath) {
+                // Khôi phục về bảng KPI
+                container.innerHTML = originalContent;
+                titleEl.innerText = "BÁO CÁO TỔNG KẾT NHÂN SỰ & CHẤM CÔNG";
+                return;
+            }
+
+            // Đổi tiêu đề tờ trình theo file đã chọn
+            titleEl.innerText = "PHỤ LỤC: " + selector.options[selector.selectedIndex].text.toUpperCase();
+            
+            // Hiện trạng thái Loading
+            container.innerHTML = "<div class='text-center mt-5 text-dark'><div class='spinner-border text-primary'></div><p class='mt-2 fw-bold'>Hệ thống đang trích xuất nội dung file...</p></div>";
+
+            if (ext === ".pdf") {
+                // Đọc PDF bằng Iframe chuẩn
+                container.innerHTML = `<iframe src="${filePath}" width="100%" height="800px" style="border: none;"></iframe>`;
+            } 
+            else if (ext === ".docx") {
+                // Đọc Word (.docx) bằng Mammoth.js
+                fetch(filePath)
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => mammoth.convertToHtml({ arrayBuffer: buffer }))
+                    .then(result => {
+                        container.innerHTML = `<div class='text-start text-dark' style='line-height: 1.6; font-size: 15px;'>${result.value}</div>`;
+                    })
+                    .catch(err => {
+                        container.innerHTML = "<div class='alert alert-danger'>❌ Không thể đọc file Word này. Hệ thống yêu cầu định dạng chuẩn .docx từ Microsoft Word.</div>";
+                    });
+            } 
+            else {
+                container.innerHTML = `<div class='alert alert-warning text-center mt-4'>
+                    <i class='fas fa-exclamation-triangle fa-2x mb-2'></i><br>
+                    Trình duyệt chỉ hỗ trợ xem trực tiếp <b>.PDF</b> và <b>.DOCX</b>.<br>
+                    <a href='${filePath}' class='btn btn-primary mt-3' download>Nhấn vào đây để tải về máy</a>
+                </div>`;
+            }
+        }
+    </script>
+}

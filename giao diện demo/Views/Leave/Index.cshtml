@@ -1,56 +1,179 @@
 ﻿@model List<giao_dien_demo.Models.Leave>
+@using Microsoft.AspNetCore.Http
+@{
+    var role = Context.Session.GetString("Role");
+    ViewData["Title"] = "Quản lý Nghỉ phép";
+    
+    // 🔥 BƯỚC 1: Lấy danh sách nhân viên từ Controller truyền sang để dò Mã NV
+    var empList = ViewBag.EmployeeList as List<giao_dien_demo.Models.Employee> ?? new List<giao_dien_demo.Models.Employee>();
+}
 
-<h2>📄 Nghỉ phép</h2>
+<div class="container-fluid mt-3">
+    <h2 class="mb-4">📄 @(role == "HR" ? "Danh sách đơn nghỉ phép (Quản lý)" : "Đơn nghỉ phép của tôi")</h2>
 
-<a asp-controller="Dashboard" asp-action="Index">⬅ Quay về</a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">⬅ Quay về</a>
+            @if (role != "HR")
+            {
+                <a asp-action="Create" class="btn btn-primary btn-sm ms-2">➕ Tạo đơn nghỉ mới</a>
+            }
+        </div>
+        @if (role == "HR")
+        {
+            <span class="badge bg-info text-dark">Chế độ: Quản trị viên (HR)</span>
+        }
+    </div>
 
-<br />
-<br />
+    <table class="table table-bordered table-hover shadow-sm" style="width:100%; text-align: center; vertical-align: middle;">
+        <thead style="background:#2196F3; color:white;">
+            <tr>
+                <th style="width: 50px;">ID</th>
+                <th>Mã NV</th> 
+                @if (role == "HR")
+                {
+                    <th>Nhân viên</th>
+                }
+                <th>Từ ngày</th>
+                <th>Đến ngày</th>
+                <th>Lý do</th>
+                <th>Trạng thái</th>
+                <th style="width: 250px;">Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Count > 0)
+            {
+                foreach (var item in Model)
+                {
+                    // 🔥 BƯỚC 3: LOGIC DÒ MÃ TỰ ĐỘNG BẰNG TÊN
+                    var empName = item.EmployeeName ?? "";
+                    var emp = empList.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name) && e.Name.Trim().ToLower() == empName.Trim().ToLower());
+                    var empCode = (emp != null && !string.IsNullOrEmpty(emp.EmployeeCode)) ? emp.EmployeeCode : "---";
 
-<a asp-action="Create">➕ Tạo đơn nghỉ</a>
+                    <tr id="row-@item.Id">
+                        <td>@item.Id</td>
+                        
+                        <td>
+                            <span class="badge @(empCode == "---" ? "bg-info" : "bg-secondary")" style="font-size: 13px;">
+                                @empCode
+                            </span>
+                        </td>
 
-<br />
-<br />
+                        @if (role == "HR")
+                        {
+                            <td><strong>@item.EmployeeName</strong></td>
+                        }
+                        <td>@item.FromDate.ToString("dd/MM/yyyy")</td>
+                        <td>@item.ToDate.ToString("dd/MM/yyyy")</td>
+                        <td style="text-align: left;">@item.Reason</td>
+                        <td>
+                            @if (item.Status == "Chờ duyệt")
+                            {
+                                <span style="padding: 4px 10px; border-radius: 20px; background: #fff3cd; color: #856404; font-size: 12px; font-weight: bold;">⏳ Chờ duyệt</span>
+                            }
+                            else if (item.Status == "Đã duyệt")
+                            {
+                                <span style="padding: 4px 10px; border-radius: 20px; background: #d4edda; color: #155724; font-size: 12px; font-weight: bold;">✅ Đã duyệt</span>
+                            }
+                            else
+                            {
+                                <span style="padding: 4px 10px; border-radius: 20px; background: #f8d7da; color: #721c24; font-size: 12px; font-weight: bold;">❌ Từ chối</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                @if (role == "HR" && item.Status == "Chờ duyệt")
+                                {
+                                    <button onclick="handleAction('Approve', @item.Id)" class="btn btn-success btn-sm">Duyệt</button>
+                                    <button onclick="handleAction('Reject', @item.Id)" class="btn btn-danger btn-sm">Từ chối</button>
+                                }
 
-<table border="1" cellpadding="10" style="width:100%">
-    <tr style="background:#2196F3; color:white;">
-        <th>ID</th>
-        <th>Nhân viên</th>
-        <th>Từ ngày</th>
-        <th>Đến ngày</th>
-        <th>Lý do</th>
-        <th>Hành động</th>
-    </tr>
+                                <button onclick="deleteLeave(@item.Id)" class="btn btn-outline-danger btn-sm ms-1">
+                                    @(role == "HR" ? "Xóa" : "Hủy đơn")
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="@(role == "HR" ? 8 : 7)" class="text-center text-muted">Chưa có dữ liệu nghỉ phép.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
-    @foreach (var item in Model)
-    {
-        <tr id="row-@item.Id">
-            <td>@item.Id</td>
-            <td>@item.EmployeeName</td>
-            <td>@item.FromDate.ToShortDateString()</td>
-            <td>@item.ToDate.ToShortDateString()</td>
-            <td>@item.Reason</td>
-            <td>
-                <a href="javascript:void(0)" onclick="deleteLeave(@item.Id)">❌ Xóa</a>
-            </td>
-        </tr>
-    }
-</table>
+@* Link thư viện SweetAlert2 *@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // --- HÀM DUYỆT / TỪ CHỐI (Dành cho HR) ---
+    function handleAction(action, id) {
+        const actionText = action === 'Approve' ? 'DUYỆT' : 'TỪ CHỐI';
+        const color = action === 'Approve' ? '#28a745' : '#dc3545';
+
+        Swal.fire({
+            title: 'Xác nhận',
+            text: `Bạn có chắc chắn muốn ${actionText} đơn nghỉ phép này?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: color,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Quay lại'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.post(`/Leave/${action}`, { id: id }, function (res) {
+                    Swal.fire({
+                        title: 'Thành công!',
+                        text: `Đơn đã được ${actionText.toLowerCase()}.`,
+                        icon: 'success',
+                        timer: 1500
+                    }).then(() => {
+                        location.reload(); // Load lại để cập nhật màu trạng thái
+                    });
+                }).fail(() => {
+                    Swal.fire('Lỗi!', 'Không thể thực hiện thao tác.', 'error');
+                });
+            }
+        });
+    }
+
+    // --- HÀM XÓA / HỦY ĐƠN ---
     function deleteLeave(id) {
+        const role = '@role';
+        const confirmMsg = role === "HR" ? "Bạn chắc chắn muốn xóa đơn này khỏi hệ thống?" : "Bạn muốn hủy đơn xin nghỉ này?";
+        
+        Swal.fire({
+            title: 'Cảnh báo',
+            text: confirmMsg,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Quay lại'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let row = document.getElementById("row-" + id);
 
-        if (!confirm("Bạn chắc chắn muốn xóa?")) return;
-
-        let row = document.getElementById("row-" + id);
-
-        fetch('/Leave/Delete?id=' + id, {
-            method: 'POST'
-        })
-        .then(res => {
-            if (res.ok) {
-                row.remove();
+                $.post('/Leave/Delete', { id: id }, function (res) {
+                    $(`#row-${id}`).fadeOut(500, function() { $(this).remove(); });
+                    Swal.fire('Đã xóa!', 'Dữ liệu đã được cập nhật.', 'success');
+                }).fail(() => {
+                    Swal.fire('Lỗi!', 'Có lỗi xảy ra khi xóa.', 'error');
+                });
             }
         });
     }
 </script>
+
+<style>
+    /* Ép bảng căn giữa dọc cho đẹp */
+    .table td { vertical-align: middle !important; }
+    .btn-group .btn { font-weight: bold; }
+</style>

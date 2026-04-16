@@ -1,0 +1,219 @@
+﻿@model giao_dien_demo.Models.Employee
+@{
+    ViewData["Title"] = "Cập nhật hồ sơ cá nhân";
+}
+
+<style>
+    /* Tổng quan khung hồ sơ */
+    .profile-container {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin-top: 20px;
+    }
+
+    .profile-title {
+        font-weight: 700;
+        font-size: 24px;
+        margin-bottom: 30px;
+        text-transform: uppercase;
+    }
+
+    /* Phần ảnh đại diện bên trái */
+    .avatar-section {
+        text-align: center;
+        padding-top: 20px;
+    }
+
+    .avatar-circle {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #f0f2f5;
+        background-color: #f8f9fa;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    
+        .avatar-circle:hover {
+            opacity: 0.8;
+            border-color: #1a4d8c;
+        }
+
+    .btn-change-photo {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-size: 14px;
+        padding: 5px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .display-name {
+        font-weight: 700;
+        font-size: 26px;
+        margin-bottom: 5px;
+    }
+
+    .job-badge {
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 5px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        display: inline-block;
+        margin-bottom: 25px;
+    }
+
+    .btn-save-left {
+        background-color: #1a4d8c;
+        color: white;
+        border: none;
+        padding: 10px 40px;
+        border-radius: 8px;
+        font-weight: 600;
+        width: 160px;
+        transition: 0.3s;
+    }
+    
+        .btn-save-left:hover {
+            background-color: #133a6b;
+            transform: translateY(-2px);
+        }
+
+    /* Phần nhập liệu bên phải */
+    .form-label {
+        font-weight: 700;
+        font-size: 16px;
+        color: #212529;
+        margin-bottom: 8px;
+    }
+
+    .label-note {
+        font-weight: 400;
+        font-style: italic;
+        color: #6c757d;
+        font-size: 14px;
+        margin-left: 5px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 10px 15px;
+        border: 1px solid #ced4da;
+        margin-bottom: 20px;
+    }
+
+        .form-control:focus {
+            border-color: #1a4d8c;
+            box-shadow: 0 0 0 0.2rem rgba(26, 77, 140, 0.1);
+        }
+</style>
+
+<div class="container-fluid">
+    <h2 class="profile-title">CẬP NHẬT HỒ SƠ CÁ NHÂN</h2>
+
+    <div class="profile-container">
+        @* 🔥 QUAN TRỌNG: enctype="multipart/form-data" để gửi file *@
+        <form asp-action="UpdateMyProfile" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="Id" />
+            
+            <div class="row">
+                <div class="col-md-4 avatar-section">
+                    <h5 class="text-start fw-bold mb-4">THÔNG TIN CÁ NHÂN</h5>
+                    
+                    <div id="imagePreviewContainer">
+                        @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                        {
+                            <img id="previewAvatar" src="@Model.AvatarPath" class="avatar-circle" alt="Avatar" onclick="document.getElementById('fileInput').click()" />
+                        }
+                        else
+                        {
+                            <div id="avatarPlaceholder" class="avatar-circle d-flex align-items-center justify-content-center mx-auto" style="font-size: 70px; color: #dee2e6;" onclick="document.getElementById('fileInput').click()">👤</div>
+                        }
+                    </div>
+                    
+                    <div>
+                        @* Nút ảo để kích hoạt input file ẩn *@
+                        <button type="button" class="btn btn-change-photo" onclick="document.getElementById('fileInput').click()">Thay đổi ảnh</button>
+                        
+                        @* 🔥 Input file ẩn: name phải khớp với tham số trong Controller (AvatarFile) *@
+                        <input type="file" id="fileInput" name="AvatarFile" style="display:none" accept="image/*" onchange="previewImage(this)" />
+                    </div>
+
+                    <div class="display-name">@Model.Name</div>
+                    <div class="job-badge">@Model.JobTitle</div>
+
+                    <div>
+                        <button type="submit" class="btn btn-save-left shadow-sm">Lưu thay đổi</button>
+                    </div>
+                </div>
+
+                <div class="col-md-8 ps-md-5 pt-4">
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label">Họ và Tên <span class="label-note">Nhập tên đầy đủ (không quá 100 ký tự)</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Nguyễn Đức Long" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Địa chỉ hiện tại <span class="label-note">Cung cấp địa chỉ liên lạc chi tiết nhất</span></label>
+                            <input asp-for="Address" class="form-control" placeholder="Địa chỉ - địa chỉ liên lạc chi tiết nhất" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">CCCD/CMND <span class="label-note">Cung cấp 12 chữ số CCCD mới nhất</span></label>
+                            <input asp-for="CitizenId" class="form-control" placeholder="12 chữ số CCCD" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh <span class="label-note">Chọn ngày sinh theo định dạng</span></label>
+                            <input asp-for="BirthDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Giới tính <span class="label-note">Chọn giới tính phù hợp nhất</span></label>
+                            <select asp-for="Gender" class="form-select">
+                                <option value="">Chọn giới tính</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Tên ngân hàng <span class="label-note">Nhập tên đầy đủ của Ngân hàng (không viết tắt)</span></label>
+                            <input asp-for="BankName" class="form-control" placeholder="Tên ngân hàng" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Số tài khoản <span class="label-note">Nhập số tài khoản số sẵn chính xác</span></label>
+                            <input asp-for="BankAccountNumber" class="form-control" placeholder="Số tài khoản" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 📸 Hàm xem trước ảnh (Preview)
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    let container = document.getElementById('imagePreviewContainer');
+                    // Thay thế placeholder hoặc ảnh cũ bằng ảnh mới vừa chọn
+                    container.innerHTML = `<img id="previewAvatar" src="${e.target.result}" class="avatar-circle" alt="Avatar" onclick="document.getElementById('fileInput').click()" />`;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}
